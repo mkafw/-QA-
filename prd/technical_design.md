@@ -38,6 +38,7 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 │   └── SedimentationService.ts
 ├── repositories/     # Data (Storage Access)
 │   └── MemoryRepository.ts
+│   └── SupabaseRepository.ts
 ├── utils/            # Logic (Pure Math)
 │   └── helixMath.ts
 ├── types.ts          # Shared Type Definitions
@@ -51,10 +52,10 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 *   **Styling**: Tailwind CSS (Cosmic Glass Theme).
 *   **Visualization**: D3.js (Managed via `helixMath` utility).
 
-### Backend (Server) - *Planned Phase 2*
-*   **Runtime**: Rust.
-*   **Framework**: Axum.
-*   **Database**: Supabase (PostgreSQL).
+### Backend & Storage (Phase 2)
+*   **Relational Data**: Supabase (PostgreSQL) - storing Questions, OKRs, Failures.
+*   **Vector Engine**: **OceanBase SeekDB** - High-concurrency vector retrieval for "Smart Input" and Semantic Search.
+*   **Server**: Rust (Axum) - Future migration target for API layer.
 
 ## 4. Data Models (Types)
 
@@ -63,6 +64,10 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 *   **Question**: Extends NodeBase. `content` (Markdown), `level` (0-2).
 *   **Objective**: Extends NodeBase. `keyResults[]`.
 *   **Failure**: Extends NodeBase. `analysis5W2H`, `convertedToQuestionId`.
+
+### Storage Interfaces
+*   `IRepository`: Standard CRUD for application entities.
+*   `IVectorStore`: Semantic search interface (SeekDB).
 
 ## 5. Key Algorithms
 

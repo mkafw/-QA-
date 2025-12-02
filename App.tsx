@@ -23,6 +23,16 @@ export default function App() {
       setView(ViewMode.QA_FIRST); // Navigate to QA view upon success
     }
   };
+  
+  const handleGraphAction = (id: string, type: 'QUESTION'|'OBJECTIVE', action: 'SELECT'|'DELETE') => {
+    if (action === 'DELETE') {
+      if (confirm('Are you sure you want to delete this node from the neural net?')) {
+        actions.deleteNode(id, type);
+      }
+    } else {
+      console.log('Selected node:', id);
+    }
+  };
 
   const renderContent = () => {
     if (loading) return <div className="text-white p-12">Initializing Neural Core...</div>;
@@ -36,7 +46,11 @@ export default function App() {
       case ViewMode.OKR_FIRST:
         return <OKRView objectives={data.objectives} />;
       case ViewMode.GRAPH:
-        return <GraphView questions={data.questions} objectives={data.objectives} />;
+        return <GraphView 
+           questions={data.questions} 
+           objectives={data.objectives} 
+           onNodeAction={handleGraphAction}
+        />;
       case ViewMode.FAILURE_QUEUE:
         return <FailureQueue failures={data.failures} onSediment={handleSediment} />;
       default:

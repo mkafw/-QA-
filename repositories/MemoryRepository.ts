@@ -20,6 +20,12 @@ export const MemoryRepository: IRepository = {
     return question;
   },
 
+  deleteQuestion: async (id: string): Promise<boolean> => {
+    const initialLen = _questions.length;
+    _questions = _questions.filter(q => q.id !== id);
+    return _questions.length < initialLen;
+  },
+
   // Failures
   getFailures: async (): Promise<Failure[]> => {
     return [..._failures];
@@ -40,5 +46,11 @@ export const MemoryRepository: IRepository = {
   // Objectives
   getObjectives: async (): Promise<Objective[]> => {
     return [..._objectives];
+  },
+
+  deleteObjective: async (id: string): Promise<boolean> => {
+    const initialLen = _objectives.length;
+    _objectives = _objectives.filter(o => o.id !== id);
+    return _objectives.length < initialLen;
   }
 };

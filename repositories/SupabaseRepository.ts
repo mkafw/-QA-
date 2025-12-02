@@ -19,6 +19,16 @@ export const SupabaseRepository: IRepository = {
     return data as Question;
   },
 
+  deleteQuestion: async (id: string): Promise<boolean> => {
+    if (!supabase) throw new Error("Supabase not initialized");
+    const { error } = await supabase.from('questions').delete().eq('id', id);
+    if (error) {
+      console.error("Supabase delete failed", error);
+      return false;
+    }
+    return true;
+  },
+
   // Failures
   getFailures: async (): Promise<Failure[]> => {
     if (!supabase) throw new Error("Supabase not initialized");
@@ -51,5 +61,15 @@ export const SupabaseRepository: IRepository = {
       ...obj,
       keyResults: obj.key_results || []
     })) as Objective[];
+  },
+
+  deleteObjective: async (id: string): Promise<boolean> => {
+    if (!supabase) throw new Error("Supabase not initialized");
+    const { error } = await supabase.from('objectives').delete().eq('id', id);
+    if (error) {
+       console.error("Supabase delete failed", error);
+       return false;
+    }
+    return true;
   }
 };

@@ -74,22 +74,30 @@ export interface GraphNode {
   assets?: string[];
   tags?: string[];
   // D3 Simulation properties
+  yBase: number;
+  strand: 'A' | 'B';
   x?: number;
   y?: number;
   z?: number; // 3D depth
-  vx?: number;
-  vy?: number;
-  fx?: number | null;
-  fy?: number | null;
+  rawEntity?: Question | Objective;
 }
 
-export interface GraphLink {
-  source: string;
-  target: string;
-  type: 'related' | 'supports' | 'blocks';
+export interface IRepository {
+  getQuestions(): Promise<Question[]>;
+  addQuestion(question: Question): Promise<Question>;
+  deleteQuestion(id: string): Promise<boolean>;
+  getFailures(): Promise<Failure[]>;
+  updateFailure(id: string, updates: Partial<Failure>): Promise<Failure | null>;
+  findFailure(id: string): Promise<Failure | undefined>;
+  getObjectives(): Promise<Objective[]>;
+  deleteObjective(id: string): Promise<boolean>;
 }
 
-// Dev Log & Iteration Tracking
+export interface IVectorStore {
+  upsertVector(id: string, text: string, metadata: Record<string, any>): Promise<void>;
+  search(query: string, limit?: number): Promise<{id: string, score: number}[]>;
+}
+
 export interface Iteration {
   id: string;
   hash: string;
@@ -100,29 +108,12 @@ export interface Iteration {
     modified: number;
     sedimented: number;
   };
-  contextSummary: string; // The "AI Context" for this state
+  contextSummary: string;
 }
 
-// View Context
 export enum ViewMode {
   QA_FIRST = 'QA_FIRST',
   OKR_FIRST = 'OKR_FIRST',
   GRAPH = 'GRAPH',
   FAILURE_QUEUE = 'FAILURE_QUEUE'
-}
-
-// --- DATA LAYER INTERFACES (Iteration 6) ---
-
-export interface IRepository {
-  // Questions
-  getQuestions(): Promise<Question[]>;
-  addQuestion(question: Question): Promise<Question>;
-  
-  // Failures
-  getFailures(): Promise<Failure[]>;
-  updateFailure(id: string, updates: Partial<Failure>): Promise<Failure | null>;
-  findFailure(id: string): Promise<Failure | undefined>;
-  
-  // Objectives
-  getObjectives(): Promise<Objective[]>;
 }

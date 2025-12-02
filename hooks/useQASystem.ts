@@ -50,12 +50,8 @@ export const useQASystem = () => {
   // Actions
   const handleSediment = async (failureId: string) => {
     try {
-      // NOTE: Service currently uses MemoryRepository hardcoded in imports. 
-      // In a full implementation, we would inject 'repo' into the Service.
-      // For now, we update the Service to accept a repo or handle logic here.
-      
-      // Let's implement the logic directly here using the correct repo for now
-      // to ensure consistency with the chosen data source.
+      // NOTE: Service currently uses MemoryRepository hardcoded in imports in original logic. 
+      // We are essentially mimicking the service layer here with the correct repo.
       
       const failure = await repo.findFailure(failureId);
       if (!failure) throw new Error("Failure not found");
@@ -89,11 +85,32 @@ export const useQASystem = () => {
     }
   };
 
+  const deleteNode = async (id: string, type: 'QUESTION' | 'OBJECTIVE') => {
+    try {
+      let success = false;
+      if (type === 'QUESTION') {
+        success = await repo.deleteQuestion(id);
+      } else {
+        success = await repo.deleteObjective(id);
+      }
+      
+      if (success) {
+        console.log(`[QA-OS] Deleted ${type} node: ${id}`);
+        await refresh();
+      }
+      return success;
+    } catch (e) {
+      console.error("Delete failed", e);
+      return false;
+    }
+  };
+
   return {
     data: { questions, objectives, failures },
     loading,
     actions: {
       sedimentFailure: handleSediment,
+      deleteNode, // New Action
       refresh
     }
   };

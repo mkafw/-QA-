@@ -34,4 +34,12 @@ The codebase follows a strict **Separation of Concerns** (DDD-lite):
 - **Hash**: `data-persist-v1`
 - **Summary**: Implemented the `IRepository` interface and `SupabaseRepository`.
 - **Key Change**: `useQASystem` now acts as a Repository Factory, auto-switching between Memory (Mock) and Supabase (Real) based on environment configuration.
-- **Status**: Ready for Production Data.
+
+### Iteration 7: SeekDB Architecture Strategy
+- **Hash**: `seekdb-arch-v1`
+- **Summary**: Defined `IVectorStore` interface for OceanBase SeekDB integration. Added SQL Schema for Supabase tables.
+
+### Iteration 8: Interactive Helix & CRUD
+- **Hash**: `helix-interact-v1`
+- **Summary**: Enabled Click-to-Select and Shift+Click-to-Delete in 3D Graph. Restored visual Links and Tooltips.
+- **Changes**: Updated `GraphView` D3 logic, extended `IRepository` with delete methods, wired `App.tsx` handlers.
