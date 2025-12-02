@@ -1,0 +1,44 @@
+
+import { Question, Objective, Failure, IRepository } from '../types';
+import { INITIAL_QUESTIONS, INITIAL_OKRS, INITIAL_FAILURES } from '../services/mockData';
+
+// Singleton instance storage (simulating DB)
+let _questions = [...INITIAL_QUESTIONS];
+let _failures = [...INITIAL_FAILURES];
+let _objectives = [...INITIAL_OKRS];
+
+export const MemoryRepository: IRepository = {
+  // Questions
+  getQuestions: async (): Promise<Question[]> => {
+    // Simulate network delay for realism
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return [..._questions];
+  },
+  
+  addQuestion: async (question: Question): Promise<Question> => {
+    _questions = [question, ..._questions];
+    return question;
+  },
+
+  // Failures
+  getFailures: async (): Promise<Failure[]> => {
+    return [..._failures];
+  },
+
+  updateFailure: async (id: string, updates: Partial<Failure>): Promise<Failure | null> => {
+    const idx = _failures.findIndex(f => f.id === id);
+    if (idx === -1) return null;
+    
+    _failures[idx] = { ..._failures[idx], ...updates, updatedAt: new Date().toISOString() };
+    return _failures[idx];
+  },
+
+  findFailure: async (id: string): Promise<Failure | undefined> => {
+    return _failures.find(f => f.id === id);
+  },
+
+  // Objectives
+  getObjectives: async (): Promise<Objective[]> => {
+    return [..._objectives];
+  }
+};

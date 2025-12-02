@@ -1,5 +1,4 @@
 
-
 // Domain Types
 
 export enum LearningLevel {
@@ -77,6 +76,7 @@ export interface GraphNode {
   // D3 Simulation properties
   x?: number;
   y?: number;
+  z?: number; // 3D depth
   vx?: number;
   vy?: number;
   fx?: number | null;
@@ -109,4 +109,20 @@ export enum ViewMode {
   OKR_FIRST = 'OKR_FIRST',
   GRAPH = 'GRAPH',
   FAILURE_QUEUE = 'FAILURE_QUEUE'
+}
+
+// --- DATA LAYER INTERFACES (Iteration 6) ---
+
+export interface IRepository {
+  // Questions
+  getQuestions(): Promise<Question[]>;
+  addQuestion(question: Question): Promise<Question>;
+  
+  // Failures
+  getFailures(): Promise<Failure[]>;
+  updateFailure(id: string, updates: Partial<Failure>): Promise<Failure | null>;
+  findFailure(id: string): Promise<Failure | undefined>;
+  
+  // Objectives
+  getObjectives(): Promise<Objective[]>;
 }

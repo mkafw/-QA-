@@ -2,77 +2,74 @@
 # Technical Design Document (TDD)
 
 **Project Code**: Helix-01
-**Architecture**: Client-Server (Headless UI + Rust Backend)
+**Architecture**: Layered Architecture (DDD-Lite) on Client-Side
 
-## 1. Technology Stack
+## 1. Architectural Patterns
+We have moved away from a monolithic Component structure to a **Separation of Concerns** model.
 
-### Frontend (Client)
-*   **Framework**: Next.js 14+ (App Router).
-*   **Styling**: Tailwind CSS (Utility-first).
-*   **State Management**: React Context / Zustand.
-*   **Visualization**: D3.js (Direct DOM manipulation for performance) integrated via React Refs.
-*   **Icons**: Lucide React.
+### 1.1 The 5-Layer Model
+1.  **View Layer (`/components`)**:
+    *   **Responsibility**: Rendering UI, capturing user events.
+    *   **Constraint**: Must not contain business logic or math calculations.
+    *   **State**: Local UI state only (e.g., `isHovered`).
+2.  **Access Layer (`/hooks`)**:
+    *   **Responsibility**: The "Controller". Wires UI to Services/Repositories. Manages React State (`useState`, `useEffect`).
+    *   **Example**: `useQASystem`.
+3.  **Domain Layer (`/services`)**:
+    *   **Responsibility**: Business Rules, Transactions, Workflows.
+    *   **Example**: `SedimentationService` (Transmuting Failure -> Question).
+4.  **Data Layer (`/repositories`)**:
+    *   **Responsibility**: Data persistence, CRUD, Mocking. Hides whether data comes from Memory, LocalStorage, or API.
+    *   **Example**: `MemoryRepository`.
+5.  **Logic Layer (`/utils`)**:
+    *   **Responsibility**: Pure functions, Math, Algorithms. No side effects.
+    *   **Example**: `helixMath.ts`.
 
-### Backend (Server) - *Planned*
-*   **Runtime**: Rust.
-*   **Framework**: Axum or Actix-web.
-*   **Database**: Supabase (PostgreSQL).
-*   **Auth**: Supabase Auth.
-
-## 2. Data Schema (Supabase/Postgres)
-
-### Tables
-
-#### `nodes`
-Base table for all entities to ensure unique IDs in the graph.
-*   `id`: UUID (Primary Key)
-*   `type`: ENUM ('QUESTION', 'OBJECTIVE', 'KEY_RESULT', 'FAILURE')
-*   `created_at`: TIMESTAMPTZ
-*   `updated_at`: TIMESTAMPTZ
-
-#### `questions`
-*   `id`: UUID (FK -> nodes.id)
-*   `title`: TEXT
-*   `content`: TEXT (Markdown)
-*   `level`: SMALLINT (0, 1, 2)
-*   `assets`: JSONB (Array of URLs)
-*   `tags`: TEXT[]
-
-#### `objectives`
-*   `id`: UUID (FK -> nodes.id)
-*   `title`: TEXT
-*   `description`: TEXT
-*   `status`: TEXT
-
-#### `key_results`
-*   `id`: UUID (FK -> nodes.id)
-*   `objective_id`: UUID (FK -> objectives.id)
-*   `title`: TEXT
-*   `metric`: TEXT
-*   `status`: TEXT
-
-#### `links`
-Adjacency list for the graph.
-*   `source_id`: UUID (FK -> nodes.id)
-*   `target_id`: UUID (FK -> nodes.id)
-*   `type`: TEXT ('SUPPORTS', 'BLOCKS', 'RELATES')
-
-## 3. API Contract (Draft)
-
-### Graph Data
-`GET /api/helix/graph`
-Response:
-```json
-{
-  "nodes": [{ "id": "...", "group": 1, "x": 0, "y": 0, ... }],
-  "links": [{ "source": "...", "target": "..." }]
-}
+## 2. Directory Structure
+```
+/
+├── components/       # View (Dumb Components)
+│   ├── Layout.tsx
+│   ├── GraphView.tsx
+│   └── ...
+├── hooks/            # Access (Controllers)
+│   └── useQASystem.ts
+├── services/         # Domain (Business Logic)
+│   └── SedimentationService.ts
+├── repositories/     # Data (Storage Access)
+│   └── MemoryRepository.ts
+├── utils/            # Logic (Pure Math)
+│   └── helixMath.ts
+├── types.ts          # Shared Type Definitions
+└── prd/              # Documentation Source of Truth
 ```
 
-### Sedimentation
-`POST /api/sediment`
-Payload: `{ "failure_id": "...", "analysis": "..." }`
-Logic:
-1. Update Failure status to 'SEDIMENTED'.
-2. Create new Question entry with content from analysis.
-3. Return new Question ID.
+## 3. Technology Stack
+
+### Frontend (Client)
+*   **Framework**: Next.js 14+ (App Router) / React 18.
+*   **Styling**: Tailwind CSS (Cosmic Glass Theme).
+*   **Visualization**: D3.js (Managed via `helixMath` utility).
+
+### Backend (Server) - *Planned Phase 2*
+*   **Runtime**: Rust.
+*   **Framework**: Axum.
+*   **Database**: Supabase (PostgreSQL).
+
+## 4. Data Models (Types)
+
+### Core Entities
+*   **NodeBase**: `id`, `createdAt`, `updatedAt`
+*   **Question**: Extends NodeBase. `content` (Markdown), `level` (0-2).
+*   **Objective**: Extends NodeBase. `keyResults[]`.
+*   **Failure**: Extends NodeBase. `analysis5W2H`, `convertedToQuestionId`.
+
+## 5. Key Algorithms
+
+### 3D Helix Projection (`helixMath.ts`)
+*   **Input**: `yBase` (Linear position), `strand` (A/B), `rotation`.
+*   **Output**: `{x, y, z}`.
+*   **Physics**:
+    *   `x = sin(angle) * amp`
+    *   `z = cos(angle)`
+    *   `y = yBase + (z * TILT_FACTOR)` -> Creates the 3D slated rung effect.

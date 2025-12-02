@@ -160,5 +160,13 @@ export const INITIAL_ITERATIONS: Iteration[] = [
     message: 'Visualization Upgrade: Dense DNA Matrix',
     changes: { added: 0, modified: 1, sedimented: 0 },
     contextSummary: '# Iteration 3: Visual Density\n\n- **Problem**: The DNA Helix looked sparse ("not enough horizontal lines").\n- **Solution**: Implemented dynamic height scaling and procedural "structural rungs" independent of data nodes.\n- **Result**: Visual density now matches the biological metaphor.'
+  },
+  {
+    id: 'it-4',
+    hash: '4d2f11',
+    timestamp: '2023-12-04 09:15',
+    message: 'Visualization Upgrade: 3D Tilt Perspective',
+    changes: { added: 0, modified: 2, sedimented: 0 },
+    contextSummary: '# Iteration 4: 3D Physics\n\n- **Problem**: Horizontal lines were flat and lacked volume.\n- **Solution**: Implemented `TILT` factor in coordinate calculation.\n- **Result**: Helix rungs now slant organically based on depth (Z-axis), creating true 3D volume.'
   }
 ];
