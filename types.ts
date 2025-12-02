@@ -1,4 +1,5 @@
 
+
 // Domain Types
 
 export enum LearningLevel {
@@ -69,12 +70,37 @@ export interface GraphNode {
   label: string;
   level?: number;
   val: number; // Size
+  // Enriched data for Popup/Card
+  content?: string;
+  assets?: string[];
+  tags?: string[];
+  // D3 Simulation properties
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
 export interface GraphLink {
   source: string;
   target: string;
   type: 'related' | 'supports' | 'blocks';
+}
+
+// Dev Log & Iteration Tracking
+export interface Iteration {
+  id: string;
+  hash: string;
+  timestamp: string;
+  message: string;
+  changes: {
+    added: number;
+    modified: number;
+    sedimented: number;
+  };
+  contextSummary: string; // The "AI Context" for this state
 }
 
 // View Context

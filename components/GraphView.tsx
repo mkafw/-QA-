@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import * as d3 from 'd3';
+import { 
+  select, 
+  forceSimulation, 
+  forceLink, 
+  forceManyBody, 
+  forceCenter, 
+  line, 
+  curveBasis, 
+  timer as d3Timer 
+} from 'd3';
 import { Question, Objective, GraphNode, GraphLink } from '../types';
-import { Network, Dna } from 'lucide-react';
+import { Network, Dna, Image as ImageIcon } from 'lucide-react';
 
 interface GraphViewProps {
   questions: Question[];
@@ -12,23 +21,53 @@ export const GraphView: React.FC<GraphViewProps> = ({ questions, objectives }) =
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [layoutMode, setLayoutMode] = useState<'HELIX' | 'FORCE'>('HELIX');
-  const [rotation, setRotation] = useState(0);
-  const animationRef = useRef<number | null>(null);
+  
+  // Use Ref for rotation to avoid React re-renders on every frame
+  const rotationRef = useRef(0);
+  
+  // Interaction State
+  const [activeNode, setActiveNode] = useState<GraphNode | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const isPausedRef = useRef(false);
 
+  // Prepare Data
   const { nodes, links, helixData } = useMemo(() => {
     const rawNodes: GraphNode[] = [];
     const rawLinks: GraphLink[] = [];
     
     questions.forEach(q => {
-      rawNodes.push({ id: q.id, group: 1, label: q.title, level: q.level, val: 5 + (q.level * 2) });
+      rawNodes.push({ 
+        id: q.id, 
+        group: 1, 
+        label: q.title, 
+        level: q.level, 
+        val: 5 + (q.level * 2),
+        content: q.content,
+        assets: q.assets,
+        tags: q.tags
+      });
       q.linkedQuestionIds.forEach(targetId => rawLinks.push({ source: q.id, target: targetId, type: 'related' }));
     });
 
     objectives.forEach(o => {
-      rawNodes.push({ id: o.id, group: 2, label: o.title, val: 12 });
+      rawNodes.push({ 
+        id: o.id, 
+        group: 2, 
+        label: o.title, 
+        val: 12,
+        content: o.description,
+        tags: ['Objective']
+      });
       o.linkedQuestionIds.forEach(qid => rawLinks.push({ source: o.id, target: qid, type: 'supports' }));
       o.keyResults.forEach(kr => {
-        rawNodes.push({ id: kr.id, group: 3, label: kr.title, val: 8 });
+        rawNodes.push({ 
+          id: kr.id, 
+          group: 3, 
+          label: kr.title, 
+          val: 8,
+          content: `Metric: ${kr.metric}`,
+          tags: ['Key Result', kr.status]
+        });
         rawLinks.push({ source: o.id, target: kr.id, type: 'related' });
       });
     });
@@ -39,190 +78,295 @@ export const GraphView: React.FC<GraphViewProps> = ({ questions, objectives }) =
     return { nodes: rawNodes, links: rawLinks, helixData: { sortedQuestions, sortedObjectives } };
   }, [questions, objectives]);
 
+  // Main D3 Effect
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
-    const svg = d3.select(svgRef.current);
+    
+    // Robust Dimension Calculation
+    let width = containerRef.current.clientWidth;
+    let height = containerRef.current.clientHeight;
+    
+    if (!width || !height || width <= 0 || height <= 0) {
+      width = window.innerWidth || 800;
+      height = window.innerHeight || 600;
+    }
+
+    const svg = select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Define Glow and Gradient Filters
+    svg.append("style").text(`
+      .helix-node, .helix-node circle { pointer-events: auto; }
+      line { pointer-events: auto; }
+      text { pointer-events: none; }
+    `);
+
+    // --- Definitions ---
     const defs = svg.append("defs");
-    
-    // Standard Glow
     const filter = defs.append("filter").attr("id", "glow");
     filter.append("feGaussianBlur").attr("stdDeviation", "4").attr("result", "coloredBlur");
     const feMerge = filter.append("feMerge");
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-    // Nebula Blur (Stronger)
     const nebulaFilter = defs.append("filter").attr("id", "nebula-blur");
     nebulaFilter.append("feGaussianBlur").attr("stdDeviation", "8");
 
-    // Node Gradients
     const grad = defs.append("radialGradient").attr("id", "orbGrad");
     grad.append("stop").attr("offset", "10%").attr("stop-color", "#fff");
-    grad.append("stop").attr("offset", "100%").attr("stop-color", "#7B2EFF"); // Purple
+    grad.append("stop").attr("offset", "100%").attr("stop-color", "#7B2EFF");
 
     const gradGold = defs.append("radialGradient").attr("id", "orbGradGold");
     gradGold.append("stop").attr("offset", "10%").attr("stop-color", "#fff");
-    gradGold.append("stop").attr("offset", "100%").attr("stop-color", "#FFD700"); // Gold
+    gradGold.append("stop").attr("offset", "100%").attr("stop-color", "#FFD700");
+
+    // --- LAYOUT LOGIC ---
 
     if (layoutMode === 'FORCE') {
-      renderForceGraph(svg, width, height, nodes, links);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      // Force Layout Implementation
+      svg.attr("viewBox", [0, 0, width, height]);
+      const simulation = forceSimulation(nodes)
+        .force("link", forceLink(links).id((d: any) => d.id).distance(100))
+        .force("charge", forceManyBody().strength(-300))
+        .force("center", forceCenter(width / 2, height / 2));
+
+      const link = svg.append("g").attr("stroke-opacity", 0.3)
+        .selectAll("line").data(links).join("line")
+        .attr("stroke", "#FFFFFF").attr("stroke-width", 1);
+
+      const node = svg.append("g").selectAll("circle").data(nodes).join("circle")
+        .attr("r", (d: any) => d.val)
+        .attr("fill", (d: any) => d.group === 1 ? '#FFD700' : '#7B2EFF')
+        .attr("stroke", "#fff").attr("stroke-width", 1.5)
+        .attr("filter", "url(#glow)")
+        .style("cursor", "pointer")
+        .on("mouseenter", (event: any, d: any) => {
+          isPausedRef.current = true;
+          setActiveNode(d);
+          setTooltipPos({ x: event.clientX, y: event.clientY });
+        })
+        .on("mouseleave", () => {
+          isPausedRef.current = false;
+          setActiveNode(null);
+        });
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", (d: any) => d.source.x).attr("y1", (d: any) => d.source.y)
+          .attr("x2", (d: any) => d.target.x).attr("y2", (d: any) => d.target.y);
+        node.attr("cx", (d: any) => d.x).attr("cy", (d: any) => d.y);
+      });
+
     } else {
-      renderHelixGraph(svg, width, height, helixData, links);
-    }
-
-    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [layoutMode, nodes, links, helixData, rotation]);
-
-  useEffect(() => {
-    if (layoutMode === 'HELIX') {
-      const animate = () => {
-        setRotation(prev => (prev + 0.003) % (Math.PI * 2));
-        animationRef.current = requestAnimationFrame(animate);
-      };
-      animationRef.current = requestAnimationFrame(animate);
-    }
-  }, [layoutMode]);
-
-  // --- Renderers ---
-
-  const renderForceGraph = (svg: any, width: number, height: number, nodes: any[], links: any[]) => {
-    svg.attr("viewBox", [0, 0, width, height]);
-    const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id((d: any) => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-
-    svg.append("g").attr("stroke-opacity", 0.3)
-      .selectAll("line").data(links).join("line")
-      .attr("stroke", "#FFFFFF").attr("stroke-width", 1);
-
-    const node = svg.append("g").selectAll("circle").data(nodes).join("circle")
-      .attr("r", (d: any) => d.val)
-      .attr("fill", (d: any) => d.group === 1 ? '#FFD700' : '#7B2EFF')
-      .attr("stroke", "#fff").attr("stroke-width", 1.5)
-      .attr("filter", "url(#glow)");
-
-    simulation.on("tick", () => {
-      svg.selectAll("line")
-        .attr("x1", (d: any) => d.source.x).attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x).attr("y2", (d: any) => d.target.y);
-      node.attr("cx", (d: any) => d.x).attr("cy", (d: any) => d.y);
-    });
-  };
-
-  const renderHelixGraph = (svg: any, width: number, height: number, data: any, allLinks: any[]) => {
-    // Adjusted scaling for full screen view
-    const startY = height - 100; const endY = 100; 
-    const helixRadius = Math.min(width, height) * 0.25; // Dynamic radius based on screen size
-    
-    // 3D Projection Helper
-    const project = (x: number, y: number, z: number) => {
-      const scale = 1000 / (1000 + z); 
-      return { x: width / 2 + x * scale, y: y, scale, z }; 
-    };
-
-    const steps = 120; // High resolution for smooth nebula curves
-    const pointsA = [];
-    const pointsB = [];
-
-    // Calculate Helix Paths
-    for (let i = 0; i <= steps; i++) {
-      const p = i / steps;
-      const y = startY - (p * (startY - endY));
+      // --- HELIX LAYOUT (Dense DNA) ---
       
-      // Strand A
-      const angleA = (p * 4 * Math.PI) + rotation;
-      pointsA.push(project(Math.cos(angleA) * helixRadius, y, Math.sin(angleA) * helixRadius));
+      const nebulaGroupA = svg.append("g").attr("class", "nebula-a");
+      const nebulaGroupB = svg.append("g").attr("class", "nebula-b");
+      const rungsGroup = svg.append("g").attr("class", "rungs");
+      const nodesGroup = svg.append("g").attr("class", "nodes");
 
-      // Strand B (180 degrees offset)
-      const angleB = angleA + Math.PI;
-      pointsB.push(project(Math.cos(angleB) * helixRadius, y, Math.sin(angleB) * helixRadius));
+      // Paths
+      const pathA_blur = nebulaGroupA.append("path").attr("fill", "none").attr("stroke", "#FFD700").attr("stroke-width", 30).attr("stroke-opacity", 0.05).attr("filter", "url(#nebula-blur)");
+      const pathA_core = nebulaGroupA.append("path").attr("fill", "none").attr("stroke", "#FFD700").attr("stroke-width", 2).attr("stroke-opacity", 0.8);
+      
+      const pathB_blur = nebulaGroupB.append("path").attr("fill", "none").attr("stroke", "#7B2EFF").attr("stroke-width", 30).attr("stroke-opacity", 0.05).attr("filter", "url(#nebula-blur)");
+      const pathB_core = nebulaGroupB.append("path").attr("fill", "none").attr("stroke", "#7B2EFF").attr("stroke-width", 2).attr("stroke-opacity", 0.8);
+
+      // --- 1. DYNAMIC HEIGHT CALCULATION ---
+      // Base height is container height, but we grow if there are many nodes.
+      // We want roughly 60px per node vertically to give them breathing room.
+      const itemsA = helixData.sortedQuestions;
+      const itemsB = helixData.sortedObjectives;
+      const maxDataCount = Math.max(itemsA.length, itemsB.length, 6); // Min 6 slots
+      
+      // Dynamic Helix parameters
+      const nodeSpacing = 50; 
+      const marginY = height * 0.15;
+      // If content fits in screen, use screen height * 0.7. Else grow.
+      const calculatedHeight = Math.max(height * 0.7, maxDataCount * nodeSpacing);
+      const helixHeight = calculatedHeight;
+      const startY = (height - helixHeight) / 2; // Center vertically if small, or start top if big
+
+      // --- 2. STRUCTURAL RUNGS (Base Pairs) ---
+      // We generate rungs purely for visuals, independent of data nodes.
+      // This creates the "ladder" look even if empty.
+      const rungSpacing = 20; // Dense rungs
+      const numStructuralRungs = Math.floor(helixHeight / rungSpacing);
+      const structuralRungsData = Array.from({ length: numStructuralRungs }, (_, i) => ({
+        y: startY + i * rungSpacing,
+        isStructural: true
+      }));
+
+      const structuralRungElements = rungsGroup.selectAll(".struct-rung")
+        .data(structuralRungsData)
+        .enter().append("line")
+        .attr("class", "struct-rung")
+        .attr("stroke", "white")
+        .attr("stroke-width", 0.5)
+        .attr("stroke-opacity", 0.1); // Subtle background rungs
+
+      // --- 3. DATA NODES ---
+      // Map data to specific Y positions. We skip some rungs to spread them out? 
+      // Or just map them linearly.
+      const renderedNodes: any[] = [];
+      
+      itemsA.forEach((d, i) => {
+        renderedNodes.push({ ...d, helixY: startY + i * (helixHeight / (maxDataCount - 1 || 1)), strand: 'A', group: 1 });
+      });
+      itemsB.forEach((d, i) => {
+        renderedNodes.push({ ...d, helixY: startY + i * (helixHeight / (maxDataCount - 1 || 1)), strand: 'B', group: 2 });
+      });
+
+      const nodeElements = nodesGroup.selectAll("g")
+        .data(renderedNodes)
+        .enter().append("g")
+        .attr("class", "helix-node")
+        .style("cursor", "pointer")
+        .on("mouseenter", (event: any, d: any) => {
+          isPausedRef.current = true;
+          setActiveNode(d);
+          setTooltipPos({ x: event.clientX, y: event.clientY });
+        })
+        .on("mouseleave", () => {
+          isPausedRef.current = false;
+          setActiveNode(null);
+        });
+
+      nodeElements.append("circle")
+        .attr("r", 6)
+        .attr("fill", (d: any) => d.strand === 'A' ? "url(#orbGradGold)" : "url(#orbGrad)")
+        .attr("filter", "url(#glow)");
+
+      // --- 4. DATA RUNGS (Strong Connections) ---
+      // Visual Highlight for actual connections (if indices match, or logic match)
+      // For visual simplicity in Helix mode, we often connect index-to-index.
+      // Or we can draw lines for actual relationships. 
+      // Let's draw visual connectors for the "active" rungs (where data exists on both sides).
+      const activeRungLinks: any[] = [];
+      for(let i=0; i<Math.min(itemsA.length, itemsB.length); i++) {
+        activeRungLinks.push({ 
+          source: renderedNodes.find(n => n.id === itemsA[i].id),
+          target: renderedNodes.find(n => n.id === itemsB[i].id) 
+        });
+      }
+      
+      const activeRungElements = rungsGroup.selectAll(".active-rung")
+        .data(activeRungLinks)
+        .enter().append("line")
+        .attr("class", "active-rung")
+        .attr("stroke", "url(#orbGradGold)") // Gold connection
+        .attr("stroke-width", 1.5)
+        .attr("stroke-opacity", 0.6);
+
+      // --- ANIMATION ---
+      const freq = (5 * Math.PI) / helixHeight; // 2.5 cycles
+      const amp = Math.min(width * 0.2, 140);
+      
+      const tick = () => {
+        if (!isPausedRef.current) rotationRef.current += 0.008;
+        const rot = rotationRef.current;
+        
+        // Helper to get 3D coords
+        const getCoords = (y: number, strand: 'A'|'B') => {
+          const angle = (y - startY) * freq + rot + (strand === 'B' ? Math.PI : 0);
+          const x = (width / 2) + amp * Math.sin(angle);
+          const z = Math.cos(angle);
+          return { x, y, z };
+        };
+
+        // 1. Draw Paths
+        const steps = 120;
+        const pointsA: [number, number][] = [];
+        const pointsB: [number, number][] = [];
+        
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const y = startY + t * helixHeight;
+          pointsA.push([getCoords(y, 'A').x, y]);
+          pointsB.push([getCoords(y, 'B').x, y]);
+        }
+
+        const lineGen = line().curve(curveBasis);
+        const d_A = lineGen(pointsA as any);
+        const d_B = lineGen(pointsB as any);
+
+        if (d_A) { pathA_blur.attr("d", d_A); pathA_core.attr("d", d_A); }
+        if (d_B) { pathB_blur.attr("d", d_B); pathB_core.attr("d", d_B); }
+
+        // 2. Update Structural Rungs (The "DNA Ladder" look)
+        structuralRungElements
+            .attr("x1", (d: any) => getCoords(d.y, 'A').x)
+            .attr("y1", (d: any) => d.y)
+            .attr("x2", (d: any) => getCoords(d.y, 'B').x)
+            .attr("y2", (d: any) => d.y)
+            .attr("opacity", (d: any) => {
+                const zA = getCoords(d.y, 'A').z;
+                // Fade background rungs
+                return zA > 0 ? 0.2 : 0.05; 
+            });
+
+        // 3. Update Data Nodes
+        nodeElements.attr("transform", (d: any) => {
+          const c = getCoords(d.helixY, d.strand as 'A'|'B');
+          d.currentX = c.x; d.currentY = c.y; d.currentZ = c.z;
+          const scale = 0.6 + ((c.z + 1) / 2) * 0.6; 
+          return `translate(${c.x},${c.y}) scale(${scale})`;
+        })
+        .attr("opacity", (d: any) => 0.3 + ((d.currentZ + 1) / 2) * 0.7);
+
+        // 4. Update Active Rungs (Data connections)
+        activeRungElements
+          .attr("x1", (d: any) => d.source.currentX)
+          .attr("y1", (d: any) => d.source.currentY)
+          .attr("x2", (d: any) => d.target.currentX)
+          .attr("y2", (d: any) => d.target.currentY)
+          .attr("opacity", (d: any) => {
+             const avgZ = (d.source.currentZ + d.target.currentZ) / 2;
+             return Math.max(0.1, (avgZ + 1) / 2.5); 
+          });
+      };
+
+      const timer = d3Timer(tick);
+      return () => timer.stop();
     }
-
-    const lineGen = d3.line<any>().curve(d3.curveBasis).x(d => d.x).y(d => d.y);
-
-    // --- Draw The Middle Bars (Base Pairs) ---
-    // Drawn first to be "inside" the nebula
-    const rungs = [];
-    for(let i=0; i<steps; i+=3) {
-      rungs.push({ a: pointsA[i], b: pointsB[i] });
-    }
-    
-    svg.selectAll(".rung").data(rungs).join("line")
-      .attr("x1", (d: any) => d.a.x).attr("y1", (d: any) => d.a.y)
-      .attr("x2", (d: any) => d.b.x).attr("y2", (d: any) => d.b.y)
-      .attr("stroke", "white")
-      .attr("stroke-opacity", 0.15)
-      .attr("stroke-width", 1);
-
-
-    // --- Draw Strands (Nebula Effect) ---
-    
-    // Strand A: Gold Nebula
-    // Layer 1: Wide, faint atmosphere
-    svg.append("path").datum(pointsA).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#FFD700").attr("stroke-width", 30).attr("stroke-opacity", 0.05).attr("filter", "url(#nebula-blur)");
-    // Layer 2: Medium glow
-    svg.append("path").datum(pointsA).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#FFD700").attr("stroke-width", 8).attr("stroke-opacity", 0.2).attr("filter", "url(#glow)");
-    // Layer 3: Core wire
-    svg.append("path").datum(pointsA).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#FFD700").attr("stroke-width", 1.5).attr("stroke-opacity", 0.9);
-
-    // Strand B: Purple Nebula
-    // Layer 1: Wide atmosphere
-    svg.append("path").datum(pointsB).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#7B2EFF").attr("stroke-width", 30).attr("stroke-opacity", 0.05).attr("filter", "url(#nebula-blur)");
-    // Layer 2: Medium glow
-    svg.append("path").datum(pointsB).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#7B2EFF").attr("stroke-width", 8).attr("stroke-opacity", 0.2).attr("filter", "url(#glow)");
-    // Layer 3: Core wire
-    svg.append("path").datum(pointsB).attr("d", lineGen)
-       .attr("fill", "none").attr("stroke", "#7B2EFF").attr("stroke-width", 1.5).attr("stroke-opacity", 0.9);
-
-
-    // --- Draw Nodes (Orbs) ---
-    const items = [...data.sortedQuestions.map((d: any, i: number) => ({...d, isQ: true, idx: i, total: data.sortedQuestions.length})), 
-                   ...data.sortedObjectives.map((d: any, i: number) => ({...d, isQ: false, idx: i, total: data.sortedObjectives.length}))];
-    
-    const projectedNodes = items.map(item => {
-      const p = item.idx / Math.max(item.total -1, 1);
-      const angle = (p * 4 * Math.PI) + rotation + (item.isQ ? 0 : Math.PI);
-      const y = startY - (p * (startY - endY));
-      const coords = project(Math.cos(angle) * helixRadius, y, Math.sin(angle) * helixRadius);
-      return { ...item, ...coords };
-    }).sort((a, b) => a.z - b.z);
-
-    const nodesSel = svg.selectAll(".node").data(projectedNodes).join("g")
-       .attr("transform", (d: any) => `translate(${d.x}, ${d.y})`);
-
-    nodesSel.append("circle")
-       .attr("r", (d: any) => (d.isQ ? 6 : 9) * d.scale)
-       .attr("fill", (d: any) => d.isQ ? "url(#orbGradGold)" : "url(#orbGrad)")
-       .attr("filter", "drop-shadow(0 0 8px rgba(255,255,255,0.6))");
-       
-    nodesSel.filter((d: any) => d.scale > 0.8).append("text")
-       .text((d: any) => d.title.substring(0, 15))
-       .attr("dx", 14).attr("dy", 4)
-       .attr("fill", "white").attr("opacity", 0.9).attr("font-size", 10).attr("font-family", "Inter")
-       .style("text-shadow", "0 0 5px rgba(0,0,0,0.8)");
-  };
+  }, [nodes, links, helixData, layoutMode]);
 
   return (
-    <div ref={containerRef} className="w-full h-full relative overflow-hidden">
-        {/* Controls */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-4 z-20">
-           <button onClick={() => setLayoutMode('HELIX')} className={`p-3 rounded-full backdrop-blur-xl border transition-all ${layoutMode === 'HELIX' ? 'bg-white/20 border-white/60 text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-black/40 border-white/10 text-gray-500 hover:bg-white/10'}`}><Dna size={22}/></button>
-           <button onClick={() => setLayoutMode('FORCE')} className={`p-3 rounded-full backdrop-blur-xl border transition-all ${layoutMode === 'FORCE' ? 'bg-white/20 border-white/60 text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-black/40 border-white/10 text-gray-500 hover:bg-white/10'}`}><Network size={22}/></button>
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-transparent">
+      <svg ref={svgRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+      
+      {activeNode && (
+        <div 
+          className="absolute z-50 pointer-events-none animate-in fade-in zoom-in duration-200"
+          style={{ left: tooltipPos.x + 20, top: tooltipPos.y - 40 }}
+        >
+          <div className="bg-black/80 backdrop-blur-xl border border-white/20 p-4 rounded-2xl w-80 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-white/20 to-transparent"></div>
+             <div className="flex items-center justify-between mb-3">
+               <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full ${activeNode.group === 1 ? 'bg-cosmic-gold/20 text-cosmic-gold' : 'bg-cosmic-purple/20 text-cosmic-purple'}`}>
+                 {activeNode.group === 1 ? 'Cognition Node' : 'Action Node'}
+               </span>
+               <span className="text-[10px] text-gray-500">ID: {activeNode.id}</span>
+             </div>
+             <h4 className="text-white font-serif text-lg leading-tight mb-2">{activeNode.label}</h4>
+             <p className="text-gray-400 text-xs line-clamp-3 mb-4 font-light">{activeNode.content || 'No content available.'}</p>
+             {activeNode.assets && activeNode.assets.length > 0 && (
+               <div className="mb-4 rounded-lg overflow-hidden border border-white/10 relative">
+                 <img src={activeNode.assets[0]} alt="Asset" className="w-full h-32 object-cover opacity-80" />
+               </div>
+             )}
+             <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10">
+               {activeNode.tags?.map(tag => (
+                 <span key={tag} className="text-[9px] text-gray-400 px-2 py-0.5 bg-white/5 rounded border border-white/5">#{tag}</span>
+               ))}
+             </div>
+          </div>
         </div>
+      )}
 
-        <svg ref={svgRef} className="w-full h-full block"></svg>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-4 pointer-events-auto">
+        <button onClick={() => setLayoutMode('HELIX')} className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all ${layoutMode === 'HELIX' ? 'bg-white/20 border-white/40 shadow-glow text-white' : 'bg-black/40 border-white/10 text-gray-500'}`}><Dna size={20} /></button>
+        <button onClick={() => setLayoutMode('FORCE')} className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all ${layoutMode === 'FORCE' ? 'bg-white/20 border-white/40 shadow-glow text-white' : 'bg-black/40 border-white/10 text-gray-500'}`}><Network size={20} /></button>
+      </div>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   LayoutGrid, 
@@ -16,13 +17,15 @@ interface LayoutProps {
   currentView: ViewMode;
   onChangeView: (view: ViewMode) => void;
   toggleCreateModal: () => void;
+  onOpenGit: () => void; // New Prop
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
   children, 
   currentView, 
   onChangeView,
-  toggleCreateModal
+  toggleCreateModal,
+  onOpenGit
 }) => {
   const navItems = [
     { id: ViewMode.QA_FIRST, icon: LayoutGrid, label: 'Canvas', color: 'text-cosmic-blue', glow: 'shadow-cosmic-blue/50' },
@@ -30,6 +33,9 @@ export const Layout: React.FC<LayoutProps> = ({
     { id: ViewMode.GRAPH, icon: Network, label: 'Nexus', color: 'text-cosmic-cyan', glow: 'shadow-cosmic-cyan/50' },
     { id: ViewMode.FAILURE_QUEUE, icon: AlertTriangle, label: 'Sediment', color: 'text-cosmic-crimson', glow: 'shadow-cosmic-crimson/50' },
   ];
+
+  // Determine if the current view needs full height (no scrolling container)
+  const isFullHeightView = currentView === ViewMode.GRAPH;
 
   return (
     <div className="flex h-screen w-full font-sans selection:bg-cosmic-blue/30 overflow-hidden relative">
@@ -96,16 +102,14 @@ export const Layout: React.FC<LayoutProps> = ({
           })}
         </div>
 
-        {/* Git Status */}
+        {/* Git Status - NOW FUNCTIONAL BUTTON */}
         <div className="mt-auto z-10">
-          <a 
-            href="https://github.com/mkafw/QA" 
-            target="_blank" 
-            rel="noopener noreferrer"
+          <button 
+            onClick={onOpenGit}
             className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all cursor-pointer shadow-inner group"
           >
             <GitBranch size={14} className="text-gray-400 group-hover:text-white transition-colors" strokeWidth={1.5} />
-          </a>
+          </button>
         </div>
       </nav>
 
@@ -143,9 +147,18 @@ export const Layout: React.FC<LayoutProps> = ({
         </header>
 
         {/* Content Viewport */}
-        <div className="flex-1 overflow-y-auto pt-28 px-12 pb-10 relative scroll-smooth custom-scrollbar">
-          {children}
-        </div>
+        {/* If View is Graph, we use flex-col to fill height, else we use overflow scrolling */}
+        {isFullHeightView ? (
+          <div className="flex-1 w-full h-full pt-24 pb-12 px-12 relative flex flex-col">
+            <div className="flex-1 relative rounded-3xl overflow-hidden border border-white/5 bg-black/20 backdrop-blur-sm">
+               {children}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto pt-28 px-12 pb-10 relative scroll-smooth custom-scrollbar">
+            {children}
+          </div>
+        )}
 
       </main>
     </div>

@@ -1,5 +1,6 @@
 
-import { Question, Objective, Failure, LearningLevel, EntityType } from '../types';
+
+import { Question, Objective, Failure, LearningLevel, EntityType, Iteration } from '../types';
 
 export const INITIAL_QUESTIONS: Question[] = [
   {
@@ -132,5 +133,32 @@ export const INITIAL_FAILURES: Failure[] = [
     status: 'New',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_ITERATIONS: Iteration[] = [
+  {
+    id: 'it-1',
+    hash: '8f3a21',
+    timestamp: '2023-12-01 10:00',
+    message: 'Initial System Architecture',
+    changes: { added: 12, modified: 0, sedimented: 0 },
+    contextSummary: '# Iteration 1: Genesis\n\n- **Focus**: Defined the dual-core data model (QA + OKR).\n- **Prompt**: "Design a system like a DNA Helix."\n- **Outcome**: Basic Rust structs defined for Nodes.'
+  },
+  {
+    id: 'it-2',
+    hash: '2b9c44',
+    timestamp: '2023-12-02 14:30',
+    message: 'Added Failure Sedimentation Protocol',
+    changes: { added: 2, modified: 4, sedimented: 1 },
+    contextSummary: '# Iteration 2: Entropy Control\n\n- **Focus**: Handling Agent failures.\n- **Problem**: Infinite loops in tool use.\n- **Solution**: Implemented 5W2H analysis queue.\n- **Sedimentation**: Transmuted failure f-1 into question q-2.'
+  },
+  {
+    id: 'it-3',
+    hash: '3c5d89',
+    timestamp: '2023-12-03 16:45',
+    message: 'Visualization Upgrade: Dense DNA Matrix',
+    changes: { added: 0, modified: 1, sedimented: 0 },
+    contextSummary: '# Iteration 3: Visual Density\n\n- **Problem**: The DNA Helix looked sparse ("not enough horizontal lines").\n- **Solution**: Implemented dynamic height scaling and procedural "structural rungs" independent of data nodes.\n- **Result**: Visual density now matches the biological metaphor.'
   }
 ];

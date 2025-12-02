@@ -1,10 +1,12 @@
 
+
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { QAView } from './components/QAView';
 import { OKRView } from './components/OKRView';
 import { GraphView } from './components/GraphView';
 import { FailureQueue } from './components/FailureQueue';
+import { VersionControl } from './components/VersionControl';
 import { ViewMode, Question, Objective, Failure, EntityType } from './types';
 import { INITIAL_QUESTIONS, INITIAL_OKRS, INITIAL_FAILURES } from './services/mockData';
 
@@ -13,7 +15,10 @@ export default function App() {
   const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTIONS);
   const [objectives, setObjectives] = useState<Objective[]>(INITIAL_OKRS);
   const [failures, setFailures] = useState<Failure[]>(INITIAL_FAILURES);
+  
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGitOpen, setIsGitOpen] = useState(false);
 
   // Failure Sedimentation Logic
   const handleSediment = (failureId: string) => {
@@ -65,8 +70,15 @@ export default function App() {
       currentView={view} 
       onChangeView={setView}
       toggleCreateModal={() => setIsModalOpen(true)}
+      onOpenGit={() => setIsGitOpen(true)}
     >
       {renderContent()}
+
+      {/* Version Control Hologram */}
+      <VersionControl 
+        isOpen={isGitOpen} 
+        onClose={() => setIsGitOpen(false)} 
+      />
 
       {/* Simple Create Modal Placeholder */}
       {isModalOpen && (
