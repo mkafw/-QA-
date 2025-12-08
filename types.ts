@@ -1,4 +1,5 @@
 
+
 // Domain Types
 
 export enum LearningLevel {
@@ -69,6 +70,7 @@ export interface GraphNode {
   label: string;
   level?: number;
   val: number; // Size
+  type?: string;
   // Enriched data for Popup/Card
   content?: string;
   assets?: string[];
@@ -80,6 +82,11 @@ export interface GraphNode {
   y?: number;
   z?: number; // 3D depth
   rawEntity?: Question | Objective;
+
+  // Added properties for GraphView logic
+  index?: number;
+  linkedQuestionIds?: string[];
+  linkedOKRIds?: string[];
 }
 
 export interface IRepository {

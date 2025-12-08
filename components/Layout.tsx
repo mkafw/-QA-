@@ -29,8 +29,8 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const navItems = [
     { id: ViewMode.QA_FIRST, icon: LayoutGrid, label: 'Canvas', color: 'text-cosmic-blue', glow: 'shadow-cosmic-blue/50' },
-    { id: ViewMode.OKR_FIRST, icon: Target, label: 'Helix', color: 'text-cosmic-purple', glow: 'shadow-cosmic-purple/50' },
-    { id: ViewMode.GRAPH, icon: Network, label: 'Nexus', color: 'text-cosmic-cyan', glow: 'shadow-cosmic-cyan/50' },
+    { id: ViewMode.OKR_FIRST, icon: Target, label: 'Strategy', color: 'text-cosmic-purple', glow: 'shadow-cosmic-purple/50' },
+    { id: ViewMode.GRAPH, icon: Network, label: 'Helix', color: 'text-cosmic-cyan', glow: 'shadow-cosmic-cyan/50' },
     { id: ViewMode.FAILURE_QUEUE, icon: AlertTriangle, label: 'Sediment', color: 'text-cosmic-crimson', glow: 'shadow-cosmic-crimson/50' },
   ];
 
@@ -120,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <header className="absolute top-0 left-0 right-0 h-24 flex items-center justify-between px-12 z-20 pointer-events-none">
           <div className="pointer-events-auto">
             <h1 className="text-3xl font-serif text-white tracking-wide drop-shadow-md opacity-90">
-              {currentView.replace('_', ' ')}
+              {currentView === ViewMode.GRAPH ? 'Neural Helix' : currentView.replace('_', ' ')}
             </h1>
           </div>
           

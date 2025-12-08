@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GitBranch, Terminal, FileText, CheckCircle, Clock, ChevronRight, X, DownloadCloud } from 'lucide-react';
+import { GitBranch, Terminal, FileText, CheckCircle, Clock, ChevronRight, X, DownloadCloud, ListChecks, Loader2, CircleDashed } from 'lucide-react';
 import { Iteration } from '../types';
 import { INITIAL_ITERATIONS } from '../services/mockData';
 
@@ -9,10 +9,59 @@ interface VersionControlProps {
   onClose: () => void;
 }
 
+const FEATURE_MATRIX = [
+  {
+    category: "1. Core Architecture (TDD)",
+    items: [
+      { id: 'arch-1', label: "5-Layer DDD-Lite Structure", status: 'DONE' },
+      { id: 'arch-2', label: "Repository Pattern (Factory)", status: 'DONE' },
+      { id: 'arch-3', label: "Supabase Integration (Real DB)", status: 'DONE' },
+      { id: 'arch-4', label: "Vector Store Interface (SeekDB)", status: 'TODO' },
+    ]
+  },
+  {
+    category: "2. Synapse Canvas (QA View)",
+    items: [
+      { id: 'qa-1', label: "Masonry/Waterfall Layout", status: 'DONE' },
+      { id: 'qa-2', label: "L0-L2 Learning Level Filters", status: 'DONE' },
+      { id: 'qa-3', label: "Markdown Content Rendering", status: 'DONE' },
+      { id: 'qa-4', label: "Smart Input (RegEx for [[ & @)", status: 'WIP' },
+      { id: 'qa-5', label: "Asset/Link Autocomplete Logic", status: 'TODO' },
+    ]
+  },
+  {
+    category: "3. Helix Strategy (OKR View)",
+    items: [
+      { id: 'okr-1', label: "Objective & KR Visualization", status: 'DONE' },
+      { id: 'okr-2', label: "Visual Dependency Lines", status: 'DONE' },
+      { id: 'okr-3', label: "Interactive Status Updates", status: 'TODO' },
+      { id: 'okr-4', label: "Create OKR Modal", status: 'TODO' },
+    ]
+  },
+  {
+    category: "4. Neural Graph (3D Nexus)",
+    items: [
+      { id: 'grp-1', label: "Double Helix Math Projection", status: 'DONE' },
+      { id: 'grp-2', label: "Holographic Node Tooltips", status: 'DONE' },
+      { id: 'grp-3', label: "Clean Structural Rungs (White)", status: 'DONE' },
+      { id: 'grp-4', label: "Shift+Click Node Deletion", status: 'DONE' },
+      { id: 'grp-5', label: "Data-Driven Link Visualization", status: 'TODO' },
+    ]
+  },
+  {
+    category: "5. Sedimentation Protocol",
+    items: [
+      { id: 'sed-1', label: "Failure Queue UI", status: 'DONE' },
+      { id: 'sed-2', label: "Transmutation Service (Fail->QA)", status: 'DONE' },
+      { id: 'sed-3', label: "5W2H Analysis Editor", status: 'WIP' },
+    ]
+  }
+];
+
 export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose }) => {
   const [iterations, setIterations] = useState<Iteration[]>(INITIAL_ITERATIONS);
-  const [selectedIteration, setSelectedIteration] = useState<Iteration>(INITIAL_ITERATIONS[1]);
-  const [activeTab, setActiveTab] = useState<'LOG' | 'CONTEXT'>('LOG');
+  const [selectedIteration, setSelectedIteration] = useState<Iteration>(INITIAL_ITERATIONS[INITIAL_ITERATIONS.length - 1]);
+  const [activeTab, setActiveTab] = useState<'LOG' | 'CONTEXT' | 'FEATURES'>('FEATURES');
 
   if (!isOpen) return null;
 
@@ -28,6 +77,15 @@ export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose 
     };
     setIterations([newIteration, ...iterations]);
     setSelectedIteration(newIteration);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'DONE': return <CheckCircle size={14} className="text-cosmic-cyan" />;
+      case 'WIP': return <Loader2 size={14} className="text-cosmic-gold animate-spin-slow" />;
+      case 'TODO': return <CircleDashed size={14} className="text-cosmic-crimson" />;
+      default: return <CircleDashed size={14} className="text-gray-600" />;
+    }
   };
 
   return (
@@ -90,18 +148,25 @@ export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose 
           <div className="h-14 border-b border-white/10 flex items-center px-6 justify-between">
             <div className="flex space-x-6">
               <button 
+                onClick={() => setActiveTab('FEATURES')}
+                className={`flex items-center text-xs font-medium pb-4 pt-4 border-b-2 transition-colors ${activeTab === 'FEATURES' ? 'text-white border-cosmic-cyan' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+              >
+                <ListChecks size={14} className="mr-2"/>
+                Feature Matrix
+              </button>
+              <button 
                 onClick={() => setActiveTab('LOG')}
-                className={`flex items-center text-xs font-medium pb-4 pt-4 border-b-2 transition-colors ${activeTab === 'LOG' ? 'text-white border-cosmic-cyan' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
+                className={`flex items-center text-xs font-medium pb-4 pt-4 border-b-2 transition-colors ${activeTab === 'LOG' ? 'text-white border-cosmic-purple' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
               >
                 <Terminal size={14} className="mr-2"/>
-                Iteration Report
+                Iteration Log
               </button>
               <button 
                 onClick={() => setActiveTab('CONTEXT')}
                 className={`flex items-center text-xs font-medium pb-4 pt-4 border-b-2 transition-colors ${activeTab === 'CONTEXT' ? 'text-white border-cosmic-gold' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
               >
                 <FileText size={14} className="mr-2"/>
-                .ai-context.md
+                Context
               </button>
             </div>
             
@@ -112,11 +177,40 @@ export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose 
 
           {/* Content Area */}
           <div className="flex-1 p-8 overflow-y-auto custom-scrollbar font-mono text-sm leading-relaxed text-gray-300">
-            {activeTab === 'LOG' ? (
+            
+            {activeTab === 'FEATURES' && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8">
+                {FEATURE_MATRIX.map((section, idx) => (
+                  <div key={idx}>
+                    <h4 className="text-cosmic-blue text-xs uppercase tracking-widest font-bold mb-4 border-b border-white/5 pb-2">
+                      {section.category}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {section.items.map(item => (
+                        <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                          <span className="text-gray-300 text-xs">{item.label}</span>
+                          <div className="flex items-center space-x-2 bg-black/30 px-2 py-1 rounded border border-white/5">
+                            {getStatusIcon(item.status)}
+                            <span className={`text-[10px] font-bold tracking-wider ${
+                              item.status === 'DONE' ? 'text-cosmic-cyan' : 
+                              item.status === 'WIP' ? 'text-cosmic-gold' : 'text-cosmic-crimson'
+                            }`}>
+                              {item.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'LOG' && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center mb-6 text-cosmic-cyan">
-                   <CheckCircle size={16} className="mr-2"/>
-                   <span className="text-xs uppercase tracking-widest font-bold">Successfully Sedimented</span>
+                <div className="flex items-center mb-6 text-cosmic-purple">
+                   <Terminal size={16} className="mr-2"/>
+                   <span className="text-xs uppercase tracking-widest font-bold">Execution Report</span>
                 </div>
                 {/* Simulated Markdown Rendering */}
                 <div className="prose prose-invert prose-sm max-w-none">
@@ -125,7 +219,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose 
                   </pre>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'CONTEXT' && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                  <div className="flex justify-between items-center mb-4">
                     <div className="text-cosmic-gold text-xs uppercase tracking-widest font-bold">Project Neural Context</div>
@@ -151,11 +247,11 @@ export const VersionControl: React.FC<VersionControlProps> = ({ isOpen, onClose 
 
 ## 3. Iteration Log
 - **Current Hash**: 2b9c44
-- **Focus**: Visual Polish & Version Control UI.
+- **Focus**: Feature Audit.
 - **Recent Changes**:
-  - [x] Implemented .gitignore
-  - [x] Created PRD/TDD/UI documents in prd/.
-  - [x] Integrated "Holographic" Version Control UI.
+  - [x] Defined Feature Matrix based on PRD.
+  - [x] Audited current codebase capabilities.
+  - [x] Updated VersionControl UI to show real roadmap.
 
 ## 4. Known Issues & Todo
 - [ ] Connect to real GitHub API (Currently Simulated).

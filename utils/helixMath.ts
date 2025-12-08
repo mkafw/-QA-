@@ -3,6 +3,7 @@ export interface HelixPoint {
   x: number;
   y: number;
   z: number;
+  angle: number; // Raw phase angle (theta) for math calculations
 }
 
 export const HELIX_CONSTANTS = {
@@ -13,6 +14,10 @@ export const HELIX_CONSTANTS = {
 
 /**
  * Pure function to calculate a 3D point on the DNA Helix
+ * Uses Parametric Equations:
+ * x = r * sin(θ)
+ * z = r * cos(θ)
+ * y = linear + tilt_offset
  */
 export const calculateHelixPoint = (
   yBase: number,
@@ -25,7 +30,7 @@ export const calculateHelixPoint = (
   const freq = (5 * Math.PI) / helixHeight; // 2.5 cycles fixed
   const amp = Math.min(width * 0.2, HELIX_CONSTANTS.AMP_LIMIT);
   
-  // Calculate Angle
+  // Calculate Theta (Phase Angle)
   const angle = (yBase - startY) * freq + rotation + (strand === 'B' ? Math.PI : 0);
   
   // 3D Projection
@@ -35,7 +40,7 @@ export const calculateHelixPoint = (
   // Apply Tilt: Y position shifts based on depth (Z)
   const y = yBase + (z * amp * HELIX_CONSTANTS.TILT);
 
-  return { x, y, z };
+  return { x, y, z, angle };
 };
 
 /**

@@ -10,7 +10,8 @@ import { ViewMode } from './types';
 import { useQASystem } from './hooks/useQASystem';
 
 export default function App() {
-  const [view, setView] = useState<ViewMode>(ViewMode.QA_FIRST);
+  // CHANGED: Default view is now GRAPH (The Helix) to satisfy "Show me the effect" immediately.
+  const [view, setView] = useState<ViewMode>(ViewMode.GRAPH);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGitOpen, setIsGitOpen] = useState(false);
 
