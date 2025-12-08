@@ -1,5 +1,4 @@
 
-
 // Domain Types
 
 export enum LearningLevel {
@@ -87,6 +86,13 @@ export interface GraphNode {
   index?: number;
   linkedQuestionIds?: string[];
   linkedOKRIds?: string[];
+}
+
+// Visual Data Contract
+export interface HelixStep {
+  index: number;
+  question?: GraphNode;
+  objective?: GraphNode;
 }
 
 export interface IRepository {

@@ -21,26 +21,24 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 4.  **Data Layer (`/repositories`)**:
     *   **Responsibility**: Data persistence, CRUD, Mocking. Hides whether data comes from Memory, LocalStorage, or API.
     *   **Example**: `MemoryRepository`.
-5.  **Logic Layer (`/utils`)**:
-    *   **Responsibility**: Pure functions, Math, Algorithms. No side effects.
-    *   **Example**: `helixMath.ts`.
+5.  **Logic Layer (`/logic` & `/utils`)**:
+    *   **Responsibility**: Visualization Engine, Pure Math, Algorithms.
+    *   **Example**: `GraphRenderer` and its Systems.
 
 ## 2. Directory Structure
 ```
 /
 ├── components/       # View (Dumb Components)
-│   ├── Layout.tsx
-│   ├── GraphView.tsx
-│   └── ...
 ├── hooks/            # Access (Controllers)
-│   └── useQASystem.ts
 ├── services/         # Domain (Business Logic)
-│   └── SedimentationService.ts
 ├── repositories/     # Data (Storage Access)
-│   └── MemoryRepository.ts
-│   └── SupabaseRepository.ts
-├── utils/            # Logic (Pure Math)
-│   └── helixMath.ts
+├── utils/            # Pure Math (helixMath.ts)
+├── logic/            # Render Engine
+│   ├── GraphRenderer.ts  # Orchestrator
+│   └── systems/
+│       ├── SceneSystem.ts      # Layers & Definitions
+│       ├── StructureSystem.ts  # Strands & Links
+│       └── NodeSystem.ts       # Interactive Nodes
 ├── types.ts          # Shared Type Definitions
 └── prd/              # Documentation Source of Truth
 ```
@@ -50,7 +48,7 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 ### Frontend (Client)
 *   **Framework**: Next.js 14+ (App Router) / React 18.
 *   **Styling**: Tailwind CSS (Cosmic Glass Theme).
-*   **Visualization**: D3.js (Managed via `helixMath` utility).
+*   **Visualization**: D3.js (Managed via System Architecture).
 
 ### Backend & Storage (Phase 2)
 *   **Relational Data**: Supabase (PostgreSQL) - storing Questions, OKRs, Failures.
@@ -65,10 +63,6 @@ We have moved away from a monolithic Component structure to a **Separation of Co
 *   **Objective**: Extends NodeBase. `keyResults[]`.
 *   **Failure**: Extends NodeBase. `analysis5W2H`, `convertedToQuestionId`.
 
-### Storage Interfaces
-*   `IRepository`: Standard CRUD for application entities.
-*   `IVectorStore`: Semantic search interface (SeekDB).
-
 ## 5. Key Algorithms
 
 ### 3D Helix Projection (`helixMath.ts`)
@@ -78,3 +72,22 @@ We have moved away from a monolithic Component structure to a **Separation of Co
     *   `x = sin(angle) * amp`
     *   `z = cos(angle)`
     *   `y = yBase + (z * TILT_FACTOR)` -> Creates the 3D slated rung effect.
+
+## 6. Rendering Engine Architecture
+The visualization logic is split into a **System-based** architecture managed by an Orchestrator.
+
+1.  **Orchestrator (`GraphRenderer`)**:
+    *   Manages the Physics Loop (`d3.timer`).
+    *   Maintains Physics State (Rotation, Velocity, Paused/Dragging).
+    *   Delegates rendering to subsystems.
+2.  **SceneSystem**:
+    *   Owns the DOM (`<svg>`, `<defs>`).
+    *   Manages Layer stacking (Painter's Algorithm) to ensure correct depth sorting.
+    *   Defines global filters (Glow) and Gradients.
+3.  **StructureSystem**:
+    *   Stateless renderer for the "Macro" structure.
+    *   Draws DNA Strands (Backbone), Curved Intervals (Rungs), and Synapses (Links).
+4.  **NodeSystem**:
+    *   Stateful renderer for the "Micro" entities (Nodes).
+    *   Manages visual state (Active/Selected/Dark/Light).
+    *   **Interaction**: Handles specific Hit Areas for mouse events (Hover/Click) and bubbles them up to the Orchestrator.

@@ -9,6 +9,7 @@ The codebase follows a strict **Separation of Concerns** (DDD-lite):
 - **`/services` (Domain Layer)**: Pure business logic (e.g., Sedimentation rules).
 - **`/repositories` (Data Layer)**: CRUD operations. Hides data source implementation.
 - **`/utils` (Logic Layer)**: Pure math/algorithms (e.g., Helix calculations).
+- **`/logic` (Render Engine)**: D3.js visualization logic, organized by Systems.
 
 ## 2. Iteration Protocol
 1. **Plan**: Update `.ai-context.md` with intent.
@@ -43,3 +44,13 @@ The codebase follows a strict **Separation of Concerns** (DDD-lite):
 - **Hash**: `helix-interact-v1`
 - **Summary**: Enabled Click-to-Select and Shift+Click-to-Delete in 3D Graph. Restored visual Links and Tooltips.
 - **Changes**: Updated `GraphView` D3 logic, extended `IRepository` with delete methods, wired `App.tsx` handlers.
+
+### Iteration 9: System-Based Rendering Architecture
+- **Hash**: `sys-arch-v1`
+- **Summary**: Refactored the monolithic `GraphRenderer` into a modular System-based architecture to improve maintainability and interaction handling.
+- **Key Changes**:
+  - Created `logic/systems/` directory.
+  - **SceneSystem**: Manages SVG layers, definitions, gradients, and filters.
+  - **StructureSystem**: Draws the Helix backbone, curved rungs, and synapses.
+  - **NodeSystem**: Manages node visuals, physics projection, and interaction events (Hit Areas).
+  - **GraphRenderer**: Now acts as a lightweight Orchestrator/Physics Engine.

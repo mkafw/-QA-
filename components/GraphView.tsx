@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Question, Objective, GraphNode } from '../types';
+import { Question, Objective, GraphNode, HelixStep } from '../types';
 import { Zap, Target, Hand, X, Trash2, Edit } from 'lucide-react';
 import { GraphRenderer } from '../logic/GraphRenderer';
 
@@ -27,23 +27,41 @@ export const GraphView: React.FC<GraphViewProps> = ({ questions, objectives, onN
     const sortedO = [...objectives].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
     const maxSteps = Math.max(sortedQ.length, sortedO.length, 12);
-    const ladderSteps = [];
+    const ladderSteps: HelixStep[] = [];
     const flatNodes: GraphNode[] = [];
     const nodeMap = new Map<string, GraphNode>();
 
     for (let i = 0; i < maxSteps; i++) {
         const q = sortedQ[i];
         const o = sortedO[i];
-        const step: any = { index: i };
+        const step: HelixStep = { index: i };
         
         if (q) {
-            const qNode: any = { ...q, label: q.title, type: 'QUESTION', strand: 'A', index: i };
+            const qNode: GraphNode = { 
+              ...q, 
+              label: q.title, 
+              group: 1,
+              val: 1,
+              type: 'QUESTION', 
+              strand: 'A', 
+              yBase: 0, // Calculated by Renderer
+              index: i 
+            };
             step.question = qNode;
             flatNodes.push(qNode);
             nodeMap.set(q.id, qNode);
         }
         if (o) {
-            const oNode: any = { ...o, label: o.title, type: 'OBJECTIVE', strand: 'B', index: i };
+            const oNode: GraphNode = { 
+              ...o, 
+              label: o.title, 
+              group: 2,
+              val: 1,
+              type: 'OBJECTIVE', 
+              strand: 'B', 
+              yBase: 0, // Calculated by Renderer
+              index: i 
+            };
             step.objective = oNode;
             flatNodes.push(oNode);
             nodeMap.set(o.id, oNode);
@@ -123,8 +141,8 @@ export const GraphView: React.FC<GraphViewProps> = ({ questions, objectives, onN
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cosmic-blue/5 via-transparent to-transparent opacity-50 pointer-events-none"></div>
       
-      {/* Renderer Target */}
-      <svg ref={svgRef} className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
+      {/* Renderer Target - Removed pointer-events-none */}
+      <svg ref={svgRef} className="absolute inset-0 w-full h-full" style={{ overflow: 'visible' }}>
       </svg>
       
       {/* Interaction Hint */}
