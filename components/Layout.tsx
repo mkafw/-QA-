@@ -40,17 +40,18 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="flex h-screen w-full font-sans selection:bg-cosmic-blue/30 overflow-hidden relative">
       
-      {/* Ambient background orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-cosmic-blue/20 rounded-full blur-[120px] pointer-events-none animate-float-slow"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cosmic-purple/20 rounded-full blur-[120px] pointer-events-none animate-float-slow" style={{ animationDelay: '2s' }}></div>
+      {/* Ambient background orbs - BOOSTED OPACITY AND BLUR */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-cosmic-blue/40 rounded-full blur-[150px] pointer-events-none animate-pulse-glow"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-cosmic-purple/30 rounded-full blur-[150px] pointer-events-none animate-pulse-glow" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-cosmic-cyan/20 rounded-full blur-[100px] pointer-events-none animate-float-slow" style={{ animationDelay: '4s' }}></div>
 
       {/* 1. Helix Navigation Strand (Left) */}
       <nav className="relative w-24 flex flex-col items-center py-10 z-50">
         
         {/* Brand Node */}
         <div className="relative mb-16 group cursor-pointer">
-           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/20 flex items-center justify-center shadow-glass backdrop-blur-md">
-             <Crown className="text-cosmic-gold drop-shadow-md" size={20} strokeWidth={1.5} />
+           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-white/10 to-transparent border border-white/20 flex items-center justify-center shadow-glass backdrop-blur-md transition-all group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+             <Crown className="text-cosmic-gold drop-shadow-md group-hover:text-white transition-colors" size={20} strokeWidth={1.5} />
            </div>
         </div>
 
@@ -70,7 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 {/* Active Indicator (Glowing Orb behind) */}
                 <div className={`
                   absolute inset-0 rounded-full transition-all duration-500 blur-md
-                  ${isActive ? `opacity-60 bg-${item.color.split('-')[1]}-${item.color.split('-')[2]}` : 'opacity-0'}
+                  ${isActive ? `opacity-80 bg-${item.color.split('-')[1]}-${item.color.split('-')[2]}` : 'opacity-0'}
                 `}></div>
 
                 {/* The Glass Bead */}
@@ -78,16 +79,16 @@ export const Layout: React.FC<LayoutProps> = ({
                   relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
                   backdrop-blur-xl border 
                   ${isActive 
-                    ? 'bg-white/10 border-white/40 scale-110 shadow-orb' 
-                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}
+                    ? 'bg-white/10 border-white/60 scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
+                    : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30'}
                 `}>
                   {/* Gloss Highlight */}
-                  <div className="absolute top-0 inset-x-0 h-1/2 rounded-t-full bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+                  <div className="absolute top-0 inset-x-0 h-1/2 rounded-t-full bg-gradient-to-b from-white/40 to-transparent pointer-events-none"></div>
 
                   <item.icon 
                     size={isActive ? 18 : 16} 
                     strokeWidth={isActive ? 2 : 1.5}
-                    className={`relative z-20 transition-all duration-300 ${isActive ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-gray-400 group-hover:text-white'}`} 
+                    className={`relative z-20 transition-all duration-300 ${isActive ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,1)]' : 'text-gray-400 group-hover:text-white'}`} 
                   />
                 </div>
 
@@ -133,13 +134,13 @@ export const Layout: React.FC<LayoutProps> = ({
                 <input 
                   type="text" 
                   placeholder="Search Neural Net" 
-                  className="bg-black/20 border border-white/10 rounded-full py-2.5 pl-10 pr-4 text-xs font-medium text-white focus:outline-none focus:bg-black/40 focus:border-white/30 focus:w-72 w-56 transition-all placeholder-white/20 shadow-inner backdrop-blur-sm"
+                  className="bg-black/20 border border-white/10 rounded-full py-2.5 pl-10 pr-4 text-xs font-medium text-white focus:outline-none focus:bg-black/40 focus:border-white/30 focus:w-72 w-56 transition-all placeholder-white/20 shadow-inner backdrop-blur-sm focus:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                 />
              </div>
 
              <button 
                onClick={toggleCreateModal}
-               className="w-10 h-10 rounded-full bg-gradient-to-b from-white/10 to-white/5 border border-white/20 flex items-center justify-center text-white hover:scale-105 hover:bg-white/20 transition-all duration-300 shadow-glass"
+               className="w-10 h-10 rounded-full bg-gradient-to-b from-white/10 to-white/5 border border-white/20 flex items-center justify-center text-white hover:scale-105 hover:bg-white/20 transition-all duration-300 shadow-glass hover:shadow-[0_0_15px_rgba(255,255,255,0.2)]"
              >
                <Plus size={20} strokeWidth={1.5} />
              </button>

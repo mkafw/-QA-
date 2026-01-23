@@ -69,7 +69,7 @@ export interface GraphNode {
   label: string;
   level?: number;
   val: number; // Size
-  type?: string;
+  type?: string; // 'QUESTION' | 'OBJECTIVE' | 'GHOST'
   // Enriched data for Popup/Card
   content?: string;
   assets?: string[];
@@ -86,6 +86,10 @@ export interface GraphNode {
   index?: number;
   linkedQuestionIds?: string[];
   linkedOKRIds?: string[];
+  
+  // Biological Properties
+  isCrystallized?: boolean; // If linked to a Completed Objective
+  isGhost?: boolean; // Dark Matter
 }
 
 // Visual Data Contract

@@ -13,19 +13,45 @@ export class StructureSystem {
     }
 
     private initializeStrandPaths() {
-        const createStrandPath = (group: any, id: string, color: string) => {
-            return group.append("path")
+        // 1. Create Base Tube (Color)
+        const createStrandPath = (group: any, id: string, color: string, isFront: boolean) => {
+            const path = group.append("path")
                 .attr("id", id)
                 .attr("fill", "none")
                 .attr("stroke", color)
-                .attr("stroke-width", 2)
+                .attr("stroke-width", isFront ? 3 : 2) // Thicker front strands
                 .attr("stroke-linecap", "round");
+            
+            if (isFront) {
+                // Apply the Neon Glow filter defined in SceneSystem
+                path.attr("filter", "url(#glow)");
+            }
+            return path;
         };
 
-        createStrandPath(this.layers.frontStrands, "pathAFront", "#FFE580");
-        createStrandPath(this.layers.frontStrands, "pathBFront", "#7B2EFF");
-        createStrandPath(this.layers.backStrands, "pathABack", "#FFE580");
-        createStrandPath(this.layers.backStrands, "pathBBack", "#7B2EFF");
+        // 2. Create Pulse Highlight (White Energy)
+        const createPulsePath = (group: any, id: string) => {
+            return group.append("path")
+                .attr("id", id)
+                .attr("class", "helix-pulse") // CSS animation handles the flow
+                .attr("fill", "none")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2) // Slightly thinner than the tube
+                .attr("stroke-linecap", "round")
+                .attr("opacity", 0.9);
+        };
+
+        // Back Strands (No Pulse)
+        createStrandPath(this.layers.backStrands, "pathABack", "#FFE580", false);
+        createStrandPath(this.layers.backStrands, "pathBBack", "#7B2EFF", false);
+
+        // Front Strands (With Glow)
+        createStrandPath(this.layers.frontStrands, "pathAFront", "#FFE580", true);
+        createStrandPath(this.layers.frontStrands, "pathBFront", "#7B2EFF", true);
+
+        // Pulse Strands (The Highlights)
+        createPulsePath(this.layers.pulseStrands, "pulseA");
+        createPulsePath(this.layers.pulseStrands, "pulseB");
     }
 
     public render(
@@ -52,6 +78,10 @@ export class StructureSystem {
             .attr("stroke-linecap", "round")
             .attr("d", (d: any) => {
                 const step = d as HelixStep;
+                const qGhost = !step.question || step.question.isGhost;
+                const oGhost = !step.objective || step.objective.isGhost;
+                if (qGhost && oGhost) return "";
+
                 const pA = getPoint(step.index, 'A');
                 const pB = getPoint(step.index, 'B');
                 const midX = (pA.x + pB.x) / 2;
@@ -62,21 +92,22 @@ export class StructureSystem {
             })
             .attr("stroke", (d: any) => {
                 const step = d as HelixStep;
+                if (step.question?.isCrystallized || step.objective?.isCrystallized) return "#FFE580";
                 const isActive = (step.question && recentIds.has(step.question.id)) || 
                                  (step.objective && recentIds.has(step.objective.id));
-                return isActive ? "#FFE580" : "#333344";
+                return isActive ? "#FFE580" : "#555566";
             })
             .attr("stroke-width", (d: any) => {
                  const step = d as HelixStep;
                  const pA = getPoint(step.index, 'A');
                  const zNorm = (pA.z + 1) / 2;
-                 return 0.5 + (1.5 * zNorm);
+                 return 0.5 + (2 * zNorm);
             })
             .attr("opacity", (d: any) => {
                 const step = d as HelixStep;
                 const pA = getPoint(step.index, 'A');
                 const zNorm = (pA.z + 1) / 2;
-                return 0.3 + (0.4 * zNorm);
+                return 0.2 + (0.8 * zNorm);
             });
     }
 
@@ -92,7 +123,7 @@ export class StructureSystem {
         synapseLinks.enter().append("path")
             .merge(synapseLinks as any)
             .attr("fill", "none")
-            .attr("stroke-dasharray", "2 4")
+            .attr("stroke-dasharray", (d: any) => d.type === 'MUTATION' ? "1 4" : "2 4")
             .attr("stroke-linecap", "round")
             .attr("d", (d: any) => {
                 const sourceStep = allNodes.find(n => n.id === d.source.id)?.index ?? 0;
@@ -100,17 +131,25 @@ export class StructureSystem {
                 
                 const ps = getPoint(sourceStep, d.source.strand as any);
                 const pt = getPoint(targetStep, d.target.strand as any);
+                
+                if (d.type === 'MUTATION') {
+                     const midX = (ps.x + pt.x) / 2 + (Math.random() * 50 - 25);
+                     const midY = (ps.y + pt.y) / 2;
+                     return `M${ps.x},${ps.y} Q${midX},${midY} ${pt.x},${pt.y}`;
+                }
+
                 const midY = (ps.y + pt.y) / 2;
                 const midX = (ps.x + pt.x) / 2;
                 return `M${ps.x},${ps.y} Q${midX},${midY} ${pt.x},${pt.y}`;
             })
-            .attr("stroke", "#FFFFFF")
-            .attr("stroke-width", 1)
+            .attr("stroke", (d: any) => d.type === 'MUTATION' ? "#FF2E5B" : "#AACCFF")
+            .attr("stroke-width", 1.5)
             .attr("opacity", (d: any) => {
+                 if (d.type === 'MUTATION') return 0.6;
                  const focusId = activeId || selectedId;
                  if (focusId) {
-                     if (d.source.id === focusId || d.target.id === focusId) return 0.6;
-                     return 0.05; 
+                     if (d.source.id === focusId || d.target.id === focusId) return 0.9;
+                     return 0.1; 
                  }
                  return 0; 
             });
@@ -133,13 +172,19 @@ export class StructureSystem {
         const d_A = lineGen(pointsA);
         const d_B = lineGen(pointsB);
 
+        // Update Base Tubes
         if (d_A) {
-            this.layers.frontStrands.select("#pathAFront").attr("d", d_A).attr("opacity", 0.9);
-            this.layers.backStrands.select("#pathABack").attr("d", d_A).attr("opacity", 0.15);
+            this.layers.frontStrands.select("#pathAFront").attr("d", d_A).attr("opacity", 1);
+            this.layers.backStrands.select("#pathABack").attr("d", d_A).attr("opacity", 0.2);
+            // Update Pulse Highlight A
+            this.layers.pulseStrands.select("#pulseA").attr("d", d_A);
         }
+        
         if (d_B) {
-            this.layers.frontStrands.select("#pathBFront").attr("d", d_B).attr("opacity", 0.9);
-            this.layers.backStrands.select("#pathBBack").attr("d", d_B).attr("opacity", 0.15);
+            this.layers.frontStrands.select("#pathBFront").attr("d", d_B).attr("opacity", 1);
+            this.layers.backStrands.select("#pathBBack").attr("d", d_B).attr("opacity", 0.2);
+            // Update Pulse Highlight B
+            this.layers.pulseStrands.select("#pulseB").attr("d", d_B);
         }
     }
 }

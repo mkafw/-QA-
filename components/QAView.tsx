@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Question, LearningLevel } from '../types';
 import { 
@@ -6,9 +7,9 @@ import {
   Image as ImageIcon, 
   Send,
   MoreHorizontal,
-  Zap,
-  Cpu,
-  Sparkles
+  Sparkles,
+  Lock,
+  Unlock
 } from 'lucide-react';
 
 interface QAViewProps {
@@ -30,6 +31,10 @@ export const QAView: React.FC<QAViewProps> = ({ questions }) => {
   const [showAssetMenu, setShowAssetMenu] = useState(false);
   const [showLinkMenu, setShowLinkMenu] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // LAW OF RESISTANCE: Check for "Cognitive Cost"
+  const hasPaidCost = inputContent.includes('[[') || inputContent.includes('@');
+  const canSubmit = inputContent.trim().length > 0 && hasPaidCost;
 
   const filtered = activeLevel === 'ALL' 
     ? questions 
@@ -86,10 +91,18 @@ export const QAView: React.FC<QAViewProps> = ({ questions }) => {
         <div className="columns-1 md:columns-2 xl:columns-3 gap-6 space-y-6 mx-auto max-w-7xl">
           {filtered.map(q => {
             const badge = getLevelBadge(q.level);
+            // Check implicit crystallization (if it links to any OKR)
+            const isCrystallized = q.linkedOKRIds.length > 0;
+
             return (
               <div key={q.id} className="break-inside-avoid relative group">
                 {/* Crystal Platter Card */}
-                <div className="relative bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md transition-all duration-500 hover:bg-white/10 hover:shadow-glass hover:-translate-y-1">
+                <div className={`
+                    relative bg-white/5 border rounded-3xl overflow-hidden backdrop-blur-md transition-all duration-500 hover:-translate-y-1
+                    ${isCrystallized 
+                        ? 'border-cosmic-gold/30 shadow-[0_0_20px_rgba(255,229,128,0.1)]' 
+                        : 'border-white/10 hover:bg-white/10 hover:shadow-glass'}
+                `}>
                   
                   {/* Gloss Sheen */}
                   <div className="gloss-sheen"></div>
@@ -114,7 +127,7 @@ export const QAView: React.FC<QAViewProps> = ({ questions }) => {
                       </button>
                     </div>
 
-                    <h3 className="text-lg font-medium text-white mb-2 leading-tight group-hover:text-cosmic-blue transition-colors">
+                    <h3 className={`text-lg font-medium mb-2 leading-tight transition-colors ${isCrystallized ? 'text-cosmic-gold' : 'text-white group-hover:text-cosmic-blue'}`}>
                       {q.title}
                     </h3>
                     
@@ -151,7 +164,7 @@ export const QAView: React.FC<QAViewProps> = ({ questions }) => {
           <div className="relative group">
             
             {/* Glow Bloom */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-cosmic-blue via-cosmic-purple to-cosmic-cyan rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+            <div className={`absolute -inset-1 bg-gradient-to-r rounded-2xl blur opacity-20 transition-opacity duration-500 ${hasPaidCost ? 'from-cosmic-blue via-cosmic-purple to-cosmic-cyan group-hover:opacity-40' : 'from-gray-500 to-gray-700 opacity-5'}`}></div>
 
             <div className="relative bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
               
@@ -167,20 +180,25 @@ export const QAView: React.FC<QAViewProps> = ({ questions }) => {
               )}
 
               <div className="flex items-center p-4">
-                <Sparkles size={20} className="text-cosmic-gold animate-pulse-glow mr-4" strokeWidth={1.5} />
+                {hasPaidCost ? (
+                    <Sparkles size={20} className="text-cosmic-gold animate-pulse-glow mr-4" strokeWidth={1.5} />
+                ) : (
+                    <Lock size={20} className="text-gray-500 mr-4" strokeWidth={1.5} />
+                )}
+                
                 <textarea
                   ref={inputRef}
                   value={inputContent}
                   onChange={handleInput}
-                  placeholder="Ask the Neural Net..."
+                  placeholder={hasPaidCost ? "The Neural Net is listening..." : "Pay Cognitive Cost: Link [[...]] or Asset @..."}
                   className="w-full bg-transparent text-white placeholder-white/30 text-sm outline-none resize-none h-[24px] overflow-hidden"
                   rows={1}
                 />
                 <button 
-                  disabled={!inputContent.trim()}
-                  className="ml-3 p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-0 transition-all"
+                  disabled={!canSubmit}
+                  className={`ml-3 p-1.5 rounded-full transition-all ${canSubmit ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-transparent text-gray-600 cursor-not-allowed'}`}
                 >
-                  <Send size={14} />
+                  {canSubmit ? <Send size={14} /> : <Unlock size={14} />}
                 </button>
               </div>
             </div>
