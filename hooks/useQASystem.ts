@@ -1,7 +1,6 @@
 
-
 import { useState, useEffect, useCallback } from 'react';
-import { Question, Objective, Failure, IRepository } from '../types';
+import { Question, Objective, Failure, IRepository, KeyResult } from '../types';
 import { MemoryRepository } from '../repositories/MemoryRepository';
 import { SupabaseRepository } from '../repositories/SupabaseRepository';
 import { SedimentationService } from '../services/SedimentationService';
@@ -10,7 +9,6 @@ import { isSupabaseConfigured } from '../lib/supabase';
 /**
  * Controller Hook
  * Connects View to Data/Service layers.
- * Automatically chooses between Memory (Mock) and Supabase (Real) based on env config.
  */
 export const useQASystem = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -27,7 +25,8 @@ export const useQASystem = () => {
 
   // Initial Load
   const refresh = useCallback(async () => {
-    setLoading(true);
+    // Only set loading on initial load or full refreshes
+    if (questions.length === 0) setLoading(true);
     try {
       const [q, o, f] = await Promise.all([
         repo.getQuestions(),
@@ -42,7 +41,7 @@ export const useQASystem = () => {
     } finally {
       setLoading(false);
     }
-  }, [repo]);
+  }, [repo]); 
 
   useEffect(() => {
     refresh();
@@ -83,13 +82,21 @@ export const useQASystem = () => {
     }
   };
 
+  // L3: OPTIMISTIC ADD QUESTION
   const addQuestion = async (question: Question) => {
+    // 1. Instant UI Feedback
+    const prevQuestions = [...questions];
+    setQuestions([question, ...questions]);
+
     try {
+      // 2. Async Persist
       await repo.addQuestion(question);
-      await refresh();
+      // No need to refresh, local state is valid
       return true;
     } catch (e) {
       console.error("Add Question failed", e);
+      // 3. Rollback
+      setQuestions(prevQuestions);
       return false;
     }
   };
@@ -101,6 +108,17 @@ export const useQASystem = () => {
       return true;
     } catch (e) {
       console.error("Add Objective failed", e);
+      return false;
+    }
+  };
+
+  const addFailure = async (failure: Failure) => {
+    try {
+      await repo.addFailure(failure);
+      await refresh();
+      return true;
+    } catch (e) {
+      console.error("Add Failure failed", e);
       return false;
     }
   };
@@ -125,6 +143,37 @@ export const useQASystem = () => {
     }
   };
 
+  // L2: OPTIMISTIC UPDATE KR
+  const toggleKRStatus = async (objectiveId: string, krId: string, currentStatus: KeyResult['status']) => {
+    const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
+    
+    // 1. Snapshot previous state for rollback
+    const previousObjectives = [...objectives];
+
+    // 2. Optimistic Update (Instant)
+    setObjectives(prev => prev.map(obj => {
+        if (obj.id !== objectiveId) return obj;
+        return {
+            ...obj,
+            keyResults: obj.keyResults.map(kr => 
+                kr.id === krId ? { ...kr, status: newStatus } : kr
+            )
+        };
+    }));
+
+    try {
+      // 3. Perform Actual API Call
+      await repo.updateKeyResult(objectiveId, krId, newStatus);
+      // No need to refresh() if successful, we are already in sync visually
+    } catch (e) {
+      console.error("Toggle KR failed", e);
+      // 4. Rollback on Error
+      setObjectives(previousObjectives);
+      return false;
+    }
+    return true;
+  };
+
   return {
     data: { questions, objectives, failures },
     loading,
@@ -132,7 +181,9 @@ export const useQASystem = () => {
       sedimentFailure: handleSediment,
       addQuestion,
       addObjective,
-      deleteNode, 
+      addFailure,
+      deleteNode,
+      toggleKRStatus,
       refresh
     }
   };

@@ -1,22 +1,47 @@
-import React from 'react';
-import { Objective } from '../types';
-import { CheckCircle2, Circle, Target, AlertTriangle } from 'lucide-react';
+
+import React, { useEffect, useRef } from 'react';
+import { Objective, KeyResult } from '../types';
+import { CheckCircle2, Circle, Target, AlertTriangle, ArrowRight } from 'lucide-react';
 
 interface OKRViewProps {
   objectives: Objective[];
+  highlightedId?: string | null;
+  onToggleKR?: (objId: string, krId: string, currentStatus: KeyResult['status']) => void;
 }
 
-export const OKRView: React.FC<OKRViewProps> = ({ objectives }) => {
+export const OKRView: React.FC<OKRViewProps> = ({ objectives, highlightedId, onToggleKR }) => {
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    if (highlightedId && cardRefs.current.has(highlightedId)) {
+        const el = cardRefs.current.get(highlightedId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+  }, [highlightedId]);
+
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-24">
-      {objectives.map((obj, idx) => (
-        <div key={obj.id} className="relative group">
+      {objectives.map((obj, idx) => {
+        const isHighlighted = highlightedId === obj.id;
+        return (
+        <div 
+            key={obj.id} 
+            ref={(el) => { if(el) cardRefs.current.set(obj.id, el); }}
+            className={`relative group transition-all duration-700 ${isHighlighted ? 'scale-105 z-10' : ''}`}
+        >
           {/* Connecting Line */}
           {idx !== objectives.length - 1 && (
             <div className="absolute left-8 top-full h-12 w-0.5 bg-gradient-to-b from-white/10 to-transparent"></div>
           )}
 
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all duration-500 shadow-glass">
+          <div className={`
+              bg-white/5 backdrop-blur-xl border rounded-3xl overflow-hidden transition-all duration-500 shadow-glass
+              ${isHighlighted 
+                ? 'border-cosmic-purple shadow-[0_0_30px_rgba(123,46,255,0.4)] bg-cosmic-purple/10' 
+                : 'border-white/10 hover:bg-white/10'}
+          `}>
             <div className="p-8">
               <div className="flex items-start justify-between mb-6">
                  <div className="flex items-center space-x-6">
@@ -38,24 +63,40 @@ export const OKRView: React.FC<OKRViewProps> = ({ objectives }) => {
 
             <div className="bg-black/20 p-6 space-y-4">
               {obj.keyResults.map((kr) => (
-                <div key={kr.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors group/kr border border-transparent hover:border-white/5">
+                <div 
+                  key={kr.id} 
+                  onClick={() => onToggleKR && onToggleKR(obj.id, kr.id, kr.status)}
+                  className={`flex items-center justify-between p-4 rounded-xl transition-all border group/kr cursor-pointer
+                    ${kr.status === 'Completed' ? 'bg-cosmic-cyan/5 border-cosmic-cyan/20' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/5'}
+                  `}
+                >
                   <div className="flex items-center space-x-4">
-                    {kr.status === 'Completed' ? <CheckCircle2 className="text-cosmic-cyan" size={20} /> : <Circle className="text-white/20" size={20} />}
-                    <span className={`text-sm ${kr.status === 'Completed' ? 'text-white/40 line-through' : 'text-gray-200'}`}>{kr.title}</span>
+                    <div className={`transition-all duration-300 ${kr.status === 'Completed' ? 'scale-110' : 'scale-100 group-hover/kr:scale-110'}`}>
+                       {kr.status === 'Completed' ? <CheckCircle2 className="text-cosmic-cyan" size={24} /> : <Circle className="text-white/20 group-hover/kr:text-white/60" size={24} />}
+                    </div>
+                    <div>
+                        <span className={`text-sm block transition-colors ${kr.status === 'Completed' ? 'text-white/40 line-through' : 'text-gray-200'}`}>{kr.title}</span>
+                        <span className="text-[10px] text-gray-500 font-mono mt-1 block">{kr.metric}</span>
+                    </div>
                   </div>
-                  <span className={`text-[10px] uppercase font-bold px-3 py-1 rounded-full ${
-                    kr.status === 'Completed' ? 'bg-cosmic-cyan/20 text-cosmic-cyan' : 
-                    kr.status === 'In Progress' ? 'bg-cosmic-gold/20 text-cosmic-gold' : 
-                    'bg-white/10 text-gray-500'
-                  }`}>
-                    {kr.status}
-                  </span>
+                  
+                  <div className="flex items-center space-x-4">
+                     {kr.status !== 'Completed' && <ArrowRight size={14} className="text-white/0 group-hover/kr:text-white/40 -translate-x-2 group-hover/kr:translate-x-0 transition-all duration-300" />}
+                     <span className={`text-[10px] uppercase font-bold px-3 py-1 rounded-full border border-white/5 ${
+                        kr.status === 'Completed' ? 'bg-cosmic-cyan/20 text-cosmic-cyan shadow-[0_0_10px_rgba(0,240,255,0.2)]' : 
+                        kr.status === 'In Progress' ? 'bg-cosmic-gold/20 text-cosmic-gold' : 
+                        'bg-white/5 text-gray-500'
+                    }`}>
+                        {kr.status}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 };

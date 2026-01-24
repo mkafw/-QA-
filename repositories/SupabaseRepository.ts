@@ -1,6 +1,6 @@
 
 
-import { Question, Objective, Failure, IRepository } from '../types';
+import { Question, Objective, Failure, IRepository, KeyResult } from '../types';
 import { supabase } from '../lib/supabase';
 
 export const SupabaseRepository: IRepository = {
@@ -36,6 +36,13 @@ export const SupabaseRepository: IRepository = {
     const { data, error } = await supabase.from('failures').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data as Failure[];
+  },
+
+  addFailure: async (failure: Failure): Promise<Failure> => {
+    if (!supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await supabase.from('failures').insert(failure).select().single();
+    if (error) throw error;
+    return data as Failure;
   },
 
   updateFailure: async (id: string, updates: Partial<Failure>): Promise<Failure | null> => {
@@ -92,5 +99,11 @@ export const SupabaseRepository: IRepository = {
        return false;
     }
     return true;
+  },
+
+  updateKeyResult: async (objectiveId: string, krId: string, status: KeyResult['status']): Promise<void> => {
+    if (!supabase) throw new Error("Supabase not initialized");
+    const { error } = await supabase.from('key_results').update({ status }).eq('id', krId);
+    if (error) console.error("Failed to update KR", error);
   }
 };

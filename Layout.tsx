@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { 
   LayoutGrid, 
@@ -170,7 +171,7 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto pt-20 md:pt-28 px-4 md:px-12 pb-10 relative scroll-smooth custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pt-20 md:pt-28 px-4 md:px-12 pb-10 relative scroll-smooth custom-scrollbar overscroll-contain">
             {children}
           </div>
         )}

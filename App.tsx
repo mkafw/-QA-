@@ -16,6 +16,9 @@ export default function App() {
   const [view, setView] = useState<ViewMode>(ViewMode.GRAPH);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGitOpen, setIsGitOpen] = useState(false);
+  
+  // Navigation State (Neural Pathway)
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
 
   // Hook handles all data and business logic
   const { data, loading, actions } = useQASystem();
@@ -33,7 +36,14 @@ export default function App() {
         actions.deleteNode(id, type);
       }
     } else {
-      console.log('Selected node:', id);
+      // NAVIGATION LOGIC
+      console.log('Navigating to node:', id);
+      setActiveNodeId(id);
+      if (type === 'QUESTION') {
+        setView(ViewMode.QA_FIRST);
+      } else {
+        setView(ViewMode.OKR_FIRST);
+      }
     }
   };
 
@@ -44,10 +54,16 @@ export default function App() {
       case ViewMode.QA_FIRST:
         return <QAView 
           questions={data.questions} 
+          highlightedId={activeNodeId}
+          onAddQuestion={actions.addQuestion}
           onNavigateToGraph={() => setView(ViewMode.GRAPH)}
         />;
       case ViewMode.OKR_FIRST:
-        return <OKRView objectives={data.objectives} />;
+        return <OKRView 
+          objectives={data.objectives} 
+          highlightedId={activeNodeId}
+          onToggleKR={actions.toggleKRStatus}
+        />;
       case ViewMode.GRAPH:
         return <GraphView 
            questions={data.questions} 
@@ -64,7 +80,7 @@ export default function App() {
   return (
     <Layout 
       currentView={view} 
-      onChangeView={setView}
+      onChangeView={(v) => { setView(v); setActiveNodeId(null); }}
       toggleCreateModal={() => setIsModalOpen(true)}
       onOpenGit={() => setIsGitOpen(true)}
     >
@@ -75,6 +91,7 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         onCreateQuestion={actions.addQuestion}
         onCreateObjective={actions.addObjective}
+        onCreateFailure={actions.addFailure}
       />
     </Layout>
   );

@@ -105,11 +105,13 @@ export interface IRepository {
   addQuestion(question: Question): Promise<Question>;
   deleteQuestion(id: string): Promise<boolean>;
   getFailures(): Promise<Failure[]>;
+  addFailure(failure: Failure): Promise<Failure>;
   updateFailure(id: string, updates: Partial<Failure>): Promise<Failure | null>;
   findFailure(id: string): Promise<Failure | undefined>;
   getObjectives(): Promise<Objective[]>;
   addObjective(objective: Objective): Promise<Objective>;
   deleteObjective(id: string): Promise<boolean>;
+  updateKeyResult(objectiveId: string, krId: string, status: KeyResult['status']): Promise<void>;
 }
 
 export interface IVectorStore {
