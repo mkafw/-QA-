@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { Question, Objective, Failure, IRepository } from '../types';
 import { MemoryRepository } from '../repositories/MemoryRepository';
@@ -50,9 +51,6 @@ export const useQASystem = () => {
   // Actions
   const handleSediment = async (failureId: string) => {
     try {
-      // NOTE: Service currently uses MemoryRepository hardcoded in imports in original logic. 
-      // We are essentially mimicking the service layer here with the correct repo.
-      
       const failure = await repo.findFailure(failureId);
       if (!failure) throw new Error("Failure not found");
 
@@ -85,6 +83,28 @@ export const useQASystem = () => {
     }
   };
 
+  const addQuestion = async (question: Question) => {
+    try {
+      await repo.addQuestion(question);
+      await refresh();
+      return true;
+    } catch (e) {
+      console.error("Add Question failed", e);
+      return false;
+    }
+  };
+
+  const addObjective = async (objective: Objective) => {
+    try {
+      await repo.addObjective(objective);
+      await refresh();
+      return true;
+    } catch (e) {
+      console.error("Add Objective failed", e);
+      return false;
+    }
+  };
+
   const deleteNode = async (id: string, type: 'QUESTION' | 'OBJECTIVE') => {
     try {
       let success = false;
@@ -110,7 +130,9 @@ export const useQASystem = () => {
     loading,
     actions: {
       sedimentFailure: handleSediment,
-      deleteNode, // New Action
+      addQuestion,
+      addObjective,
+      deleteNode, 
       refresh
     }
   };

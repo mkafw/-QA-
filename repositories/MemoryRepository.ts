@@ -1,4 +1,5 @@
 
+
 import { Question, Objective, Failure, IRepository } from '../types';
 import { INITIAL_QUESTIONS, INITIAL_OKRS, INITIAL_FAILURES } from '../services/mockData';
 
@@ -46,6 +47,11 @@ export const MemoryRepository: IRepository = {
   // Objectives
   getObjectives: async (): Promise<Objective[]> => {
     return [..._objectives];
+  },
+
+  addObjective: async (objective: Objective): Promise<Objective> => {
+    _objectives = [objective, ..._objectives];
+    return objective;
   },
 
   deleteObjective: async (id: string): Promise<boolean> => {

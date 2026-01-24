@@ -1,4 +1,5 @@
 
+
 import { Question, Objective, Failure, IRepository } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -61,6 +62,26 @@ export const SupabaseRepository: IRepository = {
       ...obj,
       keyResults: obj.key_results || []
     })) as Objective[];
+  },
+
+  addObjective: async (objective: Objective): Promise<Objective> => {
+    if (!supabase) throw new Error("Supabase not initialized");
+    
+    // 1. Insert Objective
+    // Omit keyResults for the first insert if they are in a separate table
+    const { keyResults, ...objData } = objective;
+    const { data: obj, error: objError } = await supabase.from('objectives').insert(objData).select().single();
+    
+    if (objError) throw objError;
+
+    // 2. Insert KeyResults if any
+    if (keyResults && keyResults.length > 0) {
+       const krsWithId = keyResults.map(kr => ({ ...kr, objective_id: obj.id }));
+       const { error: krError } = await supabase.from('key_results').insert(krsWithId);
+       if (krError) console.error("Failed to insert Key Results", krError);
+    }
+
+    return { ...obj, keyResults: keyResults || [] } as Objective;
   },
 
   deleteObjective: async (id: string): Promise<boolean> => {

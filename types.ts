@@ -1,4 +1,5 @@
 
+
 // Domain Types
 
 export enum LearningLevel {
@@ -107,6 +108,7 @@ export interface IRepository {
   updateFailure(id: string, updates: Partial<Failure>): Promise<Failure | null>;
   findFailure(id: string): Promise<Failure | undefined>;
   getObjectives(): Promise<Objective[]>;
+  addObjective(objective: Objective): Promise<Objective>;
   deleteObjective(id: string): Promise<boolean>;
 }
 

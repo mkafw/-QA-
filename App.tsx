@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { QAView } from './components/QAView';
@@ -6,6 +7,7 @@ import { OKRView } from './components/OKRView';
 import { GraphView } from './components/GraphView';
 import { FailureQueue } from './components/FailureQueue';
 import { VersionControl } from './components/VersionControl';
+import { CreationModal } from './components/CreationModal';
 import { ViewMode } from './types';
 import { useQASystem } from './hooks/useQASystem';
 
@@ -68,7 +70,12 @@ export default function App() {
     >
       {renderContent()}
       <VersionControl isOpen={isGitOpen} onClose={() => setIsGitOpen(false)} />
-      {/* Modal omitted for brevity */}
+      <CreationModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onCreateQuestion={actions.addQuestion}
+        onCreateObjective={actions.addObjective}
+      />
     </Layout>
   );
 }
