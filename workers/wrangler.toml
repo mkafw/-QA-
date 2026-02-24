@@ -1,0 +1,8 @@
+name = "qa-os-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+GITHUB_OWNER = "mkafw"
+GITHUB_REPO = "-QA-"
+GITHUB_API_URL = "https://api.github.com"
