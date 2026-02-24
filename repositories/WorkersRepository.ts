@@ -1,10 +1,11 @@
 
 import { Question, Objective, Failure, IRepository, KeyResult } from '../types';
 
-const API_URL = 'https://qa-os-api.tiklt1.workers.dev/api/issues';
+const API_BASE = 'https://qa-os-api.tiklt1.workers.dev/api/issues';
 
-async function fetchAPI(method: string, data?: any): Promise<any> {
-  const response = await fetch(API_URL, {
+async function fetchAPI(method: string, endpoint: string = '', data?: any): Promise<any> {
+  const url = endpoint ? `${API_BASE}/${endpoint}` : API_BASE;
+  const response = await fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: data ? JSON.stringify(data) : undefined,
@@ -24,11 +25,11 @@ export const WorkersRepository: IRepository = {
   },
 
   addQuestion: async (question: Question): Promise<Question> => {
-    return fetchAPI('POST', question);
+    return fetchAPI('POST', '', question);
   },
 
   deleteQuestion: async (id: string): Promise<boolean> => {
-    await fetchAPI('DELETE');
+    await fetchAPI('DELETE', id);
     return true;
   },
 
@@ -38,12 +39,11 @@ export const WorkersRepository: IRepository = {
   },
 
   addFailure: async (failure: Failure): Promise<Failure> => {
-    return fetchAPI('POST', failure);
+    return fetchAPI('POST', '', failure);
   },
 
   updateFailure: async (id: string, updates: Partial<Failure>): Promise<Failure | null> => {
-    const item = { ...updates, id };
-    return fetchAPI('PATCH', item);
+    return fetchAPI('PATCH', id, { ...updates, id });
   },
 
   findFailure: async (id: string): Promise<Failure | undefined> => {
@@ -57,11 +57,11 @@ export const WorkersRepository: IRepository = {
   },
 
   addObjective: async (objective: Objective): Promise<Objective> => {
-    return fetchAPI('POST', objective);
+    return fetchAPI('POST', '', objective);
   },
 
   deleteObjective: async (id: string): Promise<boolean> => {
-    await fetchAPI('DELETE');
+    await fetchAPI('DELETE', id);
     return true;
   },
 
@@ -78,6 +78,6 @@ export const WorkersRepository: IRepository = {
       updatedAt: new Date().toISOString()
     };
     
-    await fetchAPI('PATCH', updatedObjective);
+    await fetchAPI('PATCH', objectiveId, updatedObjective);
   }
 };

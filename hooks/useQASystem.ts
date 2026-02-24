@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Question, Objective, Failure, IRepository, KeyResult } from '../types';
 import { MemoryRepository } from '../repositories/MemoryRepository';
 import { WorkersRepository } from '../repositories/WorkersRepository';
-import { SedimentationService } from '../services/SedimentationService';
 
 /**
  * Controller Hook
