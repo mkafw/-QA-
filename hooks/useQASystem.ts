@@ -2,9 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Question, Objective, Failure, IRepository, KeyResult } from '../types';
 import { MemoryRepository } from '../repositories/MemoryRepository';
-import { SupabaseRepository } from '../repositories/SupabaseRepository';
+import { WorkersRepository } from '../repositories/WorkersRepository';
 import { SedimentationService } from '../services/SedimentationService';
-import { isSupabaseConfigured } from '../lib/supabase';
 
 /**
  * Controller Hook
@@ -18,9 +17,9 @@ export const useQASystem = () => {
   
   // Repository Factory Logic
   const [repo] = useState<IRepository>(() => {
-    const useRealDB = isSupabaseConfigured();
-    console.log(`[QA-OS] System initializing. Mode: ${useRealDB ? 'PRODUCTION (Supabase)' : 'PROTOTYPE (Memory)'}`);
-    return useRealDB ? SupabaseRepository : MemoryRepository;
+    const workersUrl = import.meta.env.VITE_WORKERS_URL;
+    console.log(`[QA-OS] System initializing. Mode: ${workersUrl ? 'Workers + GitHub' : 'PROTOTYPE (Memory)'}`);
+    return workersUrl ? WorkersRepository : MemoryRepository;
   });
 
   // Initial Load
