@@ -6,16 +6,20 @@ import { QAView } from './components/QAView';
 import { OKRView } from './components/OKRView';
 import { GraphView } from './components/GraphView';
 import { FailureQueue } from './components/FailureQueue';
+import { DashboardView } from './components/DashboardView';
+import { SettingsView } from './components/SettingsView';
 import { VersionControl } from './components/VersionControl';
 import { CreationModal } from './components/CreationModal';
+import { SearchModal } from './components/SearchModal';
 import { ViewMode } from './types';
 import { useQASystem } from './hooks/useQASystem';
 
 export default function App() {
   // CHANGED: Default view is now GRAPH (The Helix) to satisfy "Show me the effect" immediately.
-  const [view, setView] = useState<ViewMode>(ViewMode.GRAPH);
+  const [view, setView] = useState<ViewMode>(ViewMode.DASHBOARD);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGitOpen, setIsGitOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Navigation State (Neural Pathway)
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
@@ -47,10 +51,29 @@ export default function App() {
     }
   };
 
+  const handleSearchSelect = (type: 'QUESTION' | 'OBJECTIVE' | 'FAILURE', id: string) => {
+    setActiveNodeId(id);
+    if (type === 'QUESTION') setView(ViewMode.QA_FIRST);
+    else if (type === 'OBJECTIVE') setView(ViewMode.OKR_FIRST);
+    else setView(ViewMode.FAILURE_QUEUE);
+  };
+
   const renderContent = () => {
     if (loading) return <div className="text-white p-12">Initializing Neural Core...</div>;
 
     switch(view) {
+      case ViewMode.DASHBOARD:
+        return <DashboardView 
+          questions={data.questions}
+          objectives={data.objectives}
+          failures={data.failures}
+          onNavigateToView={(v) => {
+            if (v === 'QA') setView(ViewMode.QA_FIRST);
+            if (v === 'OKR') setView(ViewMode.OKR_FIRST);
+            if (v === 'GRAPH') setView(ViewMode.GRAPH);
+            if (v === 'FAILURE') setView(ViewMode.FAILURE_QUEUE);
+          }}
+        />;
       case ViewMode.QA_FIRST:
         return <QAView 
           questions={data.questions} 
@@ -72,6 +95,8 @@ export default function App() {
         />;
       case ViewMode.FAILURE_QUEUE:
         return <FailureQueue failures={data.failures} onSediment={handleSediment} />;
+      case ViewMode.SETTINGS:
+        return <SettingsView onClose={() => setView(ViewMode.DASHBOARD)} />;
       default:
         return <QAView questions={data.questions} />;
     }
@@ -83,6 +108,7 @@ export default function App() {
       onChangeView={(v) => { setView(v); setActiveNodeId(null); }}
       toggleCreateModal={() => setIsModalOpen(true)}
       onOpenGit={() => setIsGitOpen(true)}
+      onOpenSearch={() => setIsSearchOpen(true)}
     >
       {renderContent()}
       <VersionControl isOpen={isGitOpen} onClose={() => setIsGitOpen(false)} />
@@ -92,6 +118,14 @@ export default function App() {
         onCreateQuestion={actions.addQuestion}
         onCreateObjective={actions.addObjective}
         onCreateFailure={actions.addFailure}
+      />
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        questions={data.questions}
+        objectives={data.objectives}
+        failures={data.failures}
+        onSelectResult={handleSearchSelect}
       />
     </Layout>
   );

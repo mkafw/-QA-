@@ -8,7 +8,9 @@ import {
   GitBranch, 
   Search,
   Plus,
-  Crown
+  Crown,
+  Home,
+  Settings
 } from 'lucide-react';
 import { ViewMode } from '../types';
 
@@ -18,6 +20,7 @@ interface LayoutProps {
   onChangeView: (view: ViewMode) => void;
   toggleCreateModal: () => void;
   onOpenGit: () => void;
+  onOpenSearch: () => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -25,13 +28,16 @@ export const Layout: React.FC<LayoutProps> = ({
   currentView, 
   onChangeView,
   toggleCreateModal,
-  onOpenGit
+  onOpenGit,
+  onOpenSearch
 }) => {
   const navItems = [
+    { id: ViewMode.DASHBOARD, icon: Home, label: 'Home', color: 'text-white' },
     { id: ViewMode.QA_FIRST, icon: LayoutGrid, label: 'Canvas', color: 'text-cosmic-blue' },
     { id: ViewMode.OKR_FIRST, icon: Target, label: 'Strategy', color: 'text-cosmic-purple' },
     { id: ViewMode.GRAPH, icon: Network, label: 'Helix', color: 'text-cosmic-cyan' },
     { id: ViewMode.FAILURE_QUEUE, icon: AlertTriangle, label: 'Sediment', color: 'text-cosmic-crimson' },
+    { id: ViewMode.SETTINGS, icon: Settings, label: 'Settings', color: 'text-gray-400' },
   ];
 
   const isFullHeightView = currentView === ViewMode.GRAPH;
@@ -140,21 +146,22 @@ export const Layout: React.FC<LayoutProps> = ({
              </h1>
           </div>
           
-          <div className="flex items-center space-x-4 md:space-x-6 pointer-events-auto">
-             {/* Spotlight Search - Hidden on small mobile */}
-             <div className="relative group hidden sm:block">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Search size={16} className="text-white/40 group-focus-within:text-white/80 transition-colors" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Search..." 
-                  className="bg-black/20 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs font-medium text-white focus:outline-none focus:bg-black/40 focus:border-white/30 focus:w-64 w-32 md:w-56 transition-all placeholder-white/20 shadow-inner backdrop-blur-sm"
-                />
-             </div>
+           <div className="flex items-center space-x-4 md:space-x-6 pointer-events-auto">
+              {/* Spotlight Search - Hidden on small mobile */}
+              <button 
+                onClick={onOpenSearch}
+                className="relative group hidden sm:block"
+              >
+                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                   <Search size={16} className="text-white/40 group-hover:text-white/80 transition-colors" />
+                 </div>
+                 <div className="bg-black/20 border border-white/10 rounded-full py-2 pl-10 pr-4 text-xs font-medium text-white/40 group-hover:text-white/60 group-hover:bg-black/40 transition-all cursor-text shadow-inner backdrop-blur-sm w-32 md:w-56">
+                   Search...
+                 </div>
+              </button>
 
-             <button 
-               onClick={toggleCreateModal}
+              <button 
+                onClick={toggleCreateModal}
                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-b from-white/10 to-white/5 border border-white/20 flex items-center justify-center text-white hover:scale-105 hover:bg-white/20 transition-all duration-300 shadow-glass"
              >
                <Plus size={18} strokeWidth={1.5} />
