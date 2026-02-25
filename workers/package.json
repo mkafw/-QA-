@@ -12,7 +12,6 @@
     "wrangler": "^3.24.0"
   },
   "dependencies": {
-    "@cloudflare/ai": "^1.2.2",
     "@octokit/rest": "^20.0.0"
   }
 }

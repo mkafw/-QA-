@@ -54,8 +54,7 @@ export class LogService {
   private log(
     level: LogLevel,
     message: string,
-    context?: Record<string ): void {
-   , unknown>
+    context?: Record<string, unknown>): void {
   if (level < this.level) return;
 
     const entry: LogEntry = {
