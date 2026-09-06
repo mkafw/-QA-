@@ -1,18 +1,639 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QA-OS · 以问题为种子的学习系统</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;0,6..72,400;1,6..72,300&family=Noto+Serif+SC:wght@200;300;400;500&family=JetBrains+Mono:wght@300;400&display=swap"
-    rel="stylesheet"
-  />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jue · 问答宝库</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* ===== 重置与基础 ===== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0a0e1a 0%, #12102a 40%, #0d1525 70%, #0a0e1a 100%);
+    min-height: 100vh;
+    color: #e2e8f0;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ===== 浮动粒子背景 ===== */
+  .particles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .particle {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(56,189,248,0.6), transparent 70%);
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0%   { transform: translateY(110vh) translateX(0) scale(0); opacity: 0; }
+    10%  { opacity: 1; transform: translateY(90vh) translateX(10px) scale(1); }
+    90%  { opacity: 0.8; }
+    100% { transform: translateY(-10vh) translateX(-20px) scale(0.5); opacity: 0; }
+  }
+
+  /* ===== 顶部导航 ===== */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10, 14, 26, 0.75);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: 1px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+    color: #0a0e1a; -webkit-text-fill-color: #0a0e1a;
+  }
+  .search-box {
+    flex: 1; max-width: 420px; position: relative;
+  }
+  .search-box input {
+    width: 100%; padding: 10px 16px 10px 40px;
+    background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 10px; color: #e2e8f0; font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-box input::placeholder { color: #64748b; }
+  .search-box input:focus {
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+  }
+  .search-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; color: #64748b; pointer-events: none;
+  }
+  .stats {
+    font-size: 13px; color: #94a3b8; white-space: nowrap;
+  }
+  .stats strong { color: #38bdf8; font-weight: 600; }
+
+  /* ===== Hero 区 ===== */
+  .hero {
+    max-width: 1200px; margin: 0 auto; padding: 48px 24px 32px;
+    text-align: center; position: relative; z-index: 1;
+  }
+  .hero h1 {
+    font-family: 'Noto Serif SC', serif; font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700; line-height: 1.3;
+    background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 12px;
+  }
+  .hero p {
+    font-size: 16px; color: #94a3b8; max-width: 560px; margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* ===== 分类标签 ===== */
+  .categories {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px 28px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    position: relative; z-index: 1;
+  }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+    background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.12);
+    color: #94a3b8; font-size: 13px; font-family: inherit; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .cat-btn:hover { border-color: rgba(56, 189, 248, 0.3); color: #cbd5e1; }
+  .cat-btn.active {
+    background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(167,139,250,0.15));
+    border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 500;
+  }
+
+  /* ===== 卡片网格 ===== */
+  .grid {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px 60px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px; position: relative; z-index: 1;
+  }
+  .card {
+    background: rgba(30, 41, 59, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 14px; padding: 22px; cursor: pointer;
+    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.4), transparent);
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(56, 189, 248, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(56,189,248,0.08);
+  }
+  .card:hover::before { opacity: 1; }
+  .card-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
+  .q-badge {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700;
+    color: #0a0e1a;
+  }
+  .card-title {
+    font-size: 16px; font-weight: 600; color: #f1f5f9; line-height: 1.5;
+    flex: 1;
+  }
+  .card-excerpt {
+    font-size: 13.5px; color: #94a3b8; line-height: 1.7;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto; padding-top: 4px;
+  }
+  .tag-list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 4px;
+    background: rgba(56, 189, 248, 0.08); color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+  }
+  .card-arrow {
+    width: 18px; height: 18px; color: #475569; transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+  .card:hover .card-arrow { color: #38bdf8; transform: translateX(3px); }
+
+  /* ===== 空状态 ===== */
+  .empty {
+    grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #64748b;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+
+  /* ===== 模态框 ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: linear-gradient(160deg, #131a2e 0%, #0f1623 100%);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 18px; max-width: 680px; width: 100%;
+    max-height: 85vh; overflow-y: auto; position: relative;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    animation: modalIn 0.25s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-head {
+    padding: 24px 28px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 8px; border: none;
+    background: rgba(148, 163, 184, 0.1); color: #94a3b8;
+    font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s;
+  }
+  .modal-close:hover { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  .modal-body { padding: 20px 28px 28px; }
+  .modal-question {
+    font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 600;
+    color: #f1f5f9; line-height: 1.5; flex: 1;
+  }
+  .modal-answer-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: #34d399;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .modal-answer-label .a-dot {
+    width: 20px; height: 20px; border-radius: 5px;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0a0e1a;
+  }
+  .modal-answer {
+    font-size: 15px; color: #cbd5e1; line-height: 1.85;
+    background: rgba(16, 24, 40, 0.5); border-radius: 10px;
+    padding: 18px 20px; border: 1px solid rgba(148, 163, 184, 0.06);
+  }
+  .modal-answer p { margin-bottom: 10px; }
+  .modal-answer p:last-child { margin-bottom: 0; }
+  .modal-answer strong { color: #f1f5f9; }
+  .modal-answer code {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    background: rgba(56, 189, 248, 0.1); color: #7dd3fc;
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+  .modal-foot {
+    padding: 16px 28px 24px; border-top: 1px solid rgba(148, 163, 184, 0.08);
+    display: flex; gap: 10px;
+  }
+  .btn {
+    padding: 10px 20px; border-radius: 10px; font-size: 14px; font-family: inherit;
+    cursor: pointer; border: none; transition: all 0.2s; display: inline-flex;
+    align-items: center; gap: 7px; font-weight: 500;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0a0e1a;
+  }
+  .btn-primary:hover { box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3); transform: translateY(-1px); }
+  .btn-ghost {
+    background: rgba(148, 163, 184, 0.08); color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+  .btn-ghost:hover { background: rgba(148, 163, 184, 0.15); }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: rgba(16, 185, 129, 0.9); color: #0a0e1a; padding: 10px 22px;
+    border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 300;
+    opacity: 0; transition: all 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== 页脚 ===== */
+  footer {
+    text-align: center; padding: 32px 24px; color: #475569; font-size: 13px;
+    position: relative; z-index: 1; border-top: 1px solid rgba(148, 163, 184, 0.06);
+  }
+  footer a { color: #64748b; text-decoration: none; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    .header-inner { flex-wrap: wrap; }
+    .search-box { order: 3; max-width: 100%; flex-basis: 100%; }
+    .stats { display: none; }
+    .hero { padding: 32px 20px 24px; }
+    .grid { grid-template-columns: 1fr; padding: 0 16px 40px; }
+    .modal-head, .modal-body, .modal-foot { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+
+<!-- 粒子背景 -->
+<div class="particles" id="particles"></div>
+
+<!-- 顶部导航 -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-mark">J</span>
+      <span>Jue 问答宝库</span>
+    </div>
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索问题、关键词或标签…" autocomplete="off">
+    </div>
+    <div class="stats">共 <strong id="totalCount">0</strong> 条问答</div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>以问题为种子，以答案为根系</h1>
+  <p>精选知识问答，覆盖 AI 工程、系统设计、编程实践与学习方法。点击卡片查看完整解答，一键复制。</p>
+</section>
+
+<!-- 分类标签 -->
+<div class="categories" id="categories"></div>
+
+<!-- 卡片网格 -->
+<main class="grid" id="grid"></main>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose" aria-label="关闭">&times;</button>
+    <div class="modal-head">
+      <span class="q-badge">Q</span>
+      <h2 class="modal-question" id="modalQuestion"></h2>
+    </div>
+    <div class="modal-body">
+      <div class="modal-answer-label"><span class="a-dot">A</span> 解答</div>
+      <div class="modal-answer" id="modalAnswer"></div>
+      <div class="modal-tags" id="modalTags"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="copyBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        复制答案
+      </button>
+      <button class="btn btn-ghost" id="copyAllBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+        复制问答
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">已复制到剪贴板</div>
+
+<!-- 页脚 -->
+<footer>
+  <p>Jue · 问答宝库 &nbsp;|&nbsp; 知识不是文件夹，而是生长的网络</p>
+</footer>
+
+<script>
+// ===== 问答数据 =====
+const QA_DATA = [
+  {
+    id: 1,
+    question: "如何减少 Zero-Shot 提示词中的幻觉问题？",
+    answer: "<p>使用 <strong>Chain of Thought (CoT)</strong> 推理链，强制模型在给出最终答案前逐步解释逻辑。具体做法：</p><p>1. 在系统提示词中加入 <code>Let's think step by step</code> 或中文等价表达</p><p>2. 明确约束输出格式，要求先列推理过程再给结论</p><p>3. 对事实性问题，要求模型标注信息来源或置信度</p><p>4. 使用 Self-Consistency：多次采样取多数答案，显著降低随机幻觉</p>",
+    tags: ["提示词工程", "可靠性"],
+    category: "AI 工程"
+  },
+  {
+    id: 2,
+    question: "Agent 设计中的 ReAct 模式是什么？",
+    answer: "<p>ReAct = <strong>Reason + Act</strong>（推理 + 行动），是自主 Agent 的基础循环模式。</p><p><strong>核心循环：</strong></p><p>1. <strong>Observe</strong> — 观察当前环境状态</p><p>2. <strong>Think</strong> — 推理下一步该做什么（Reason）</p><p>3. <strong>Act</strong> — 调用工具执行动作（Tool Use）</p><p>4. <strong>Observe result</strong> — 观察动作结果，回到第 2 步</p><p>相比纯 CoT，ReAct 将推理与外部工具调用结合，使 Agent 能够获取实时信息、执行实际操作，而不仅是在参数化知识内推理。LangChain、AutoGPT 等框架均基于此模式构建。</p>",
+    tags: ["架构", "设计模式"],
+    category: "AI 工程"
+  },
+  {
+    id: 3,
+    question: "如何设计多 Agent 协作的共享记忆系统？",
+    answer: "<p>多 Agent 共享记忆需要解决三个核心问题：<strong>存储、检索、冲突</strong>。</p><p><strong>架构要点：</strong></p><p>1. <strong>向量数据库</strong>（如 Milvus / Qdrant）用于语义检索，支持跨 Agent 的模糊匹配</p><p>2. <strong>结构化上下文窗口管理器</strong>，控制每次注入的记忆量，避免 token 溢出</p><p>3. <strong>读写权限分级</strong>：公共记忆可读写，私有记忆只读，敏感记忆加密</p><p>4. <strong>冲突解决协议</strong>：基于时间戳 + 优先级的 Last-Write-Wins，或乐观锁 + 合并策略</p><p>5. <strong>记忆衰减机制</strong>：长期未访问的记忆降低检索权重，模拟人类遗忘</p>",
+    tags: ["系统设计", "记忆"],
+    category: "系统设计"
+  },
+  {
+    id: 4,
+    question: "Agent 架构图中 Planner 和 Executor 之间的循环依赖怎么解？",
+    answer: "<p>Planner 与 Executor 之间的直接循环依赖是 Agent 系统中最常见的无限重试根源。<strong>典型症状：</strong>Planner 生成计划 → Executor 执行失败 → 反馈给 Planner → Planner 生成同样的计划 → 死循环。</p><p><strong>解决方案：</strong></p><p>1. 插入 <strong>Validation 中间层</strong>：Executor 结果先经过独立的验证器，判断是「执行错误」还是「计划错误」</p><p>2. 设置 <strong>最大重试次数</strong>（通常 3 次），超限后强制升级为人工干预或换用备选策略</p><p>3. Planner 每次重规划时必须 <strong>注入失败原因</strong>，禁止在没有新信息的情况下重新生成</p><p>4. 引入 <strong>Plan Cache</strong>：已失败的计划标记为不可用，避免重复尝试</p>",
+    tags: ["架构", "故障排查"],
+    category: "系统设计"
+  },
+  {
+    id: 5,
+    question: "RAG 系统中如何平衡检索精度与召回率？",
+    answer: "<p>RAG（检索增强生成）的核心矛盾是：<strong>精度高则召回少，召回多则噪声大</strong>。</p><p><strong>实践策略：</strong></p><p>1. <strong>混合检索</strong>：向量语义检索 + BM25 关键词检索，用 RRF 算法融合排序</p><p>2. <strong>分层检索</strong>：粗排（Top-K=50）→ 精排（Cross-Encoder 重排到 Top-5）</p><p>3. <strong>查询改写</strong>：用 LLM 将用户问题改写为 3-5 个不同角度的子查询，分别检索后合并去重</p><p>4. <strong>动态 Top-K</strong>：根据查询复杂度自适应调整检索数量，简单问题少取，复杂问题多取</p><p>5. <strong>chunk 策略优化</strong>：按语义边界切分而非固定长度，重叠 10-15% 避免上下文断裂</p>",
+    tags: ["RAG", "检索"],
+    category: "AI 工程"
+  },
+  {
+    id: 6,
+    question: "TypeScript 中如何优雅地处理异步错误？",
+    answer: "<p>异步错误处理的核心原则是：<strong>让错误可追踪、可恢复、不可忽略</strong>。</p><p><strong>推荐模式：</strong></p><p>1. <strong>Result 类型</strong>：用 <code>{ ok: true, data } | { ok: false, error }</code> 替代 throw，强制调用方处理</p><p>2. <strong>async/await + try/catch</strong>：避免 Promise.catch 链式地狱，错误处理集中可读</p><p>3. <strong>全局未捕获处理</strong>：注册 <code>unhandledRejection</code> 和 <code>uncaughtException</code> 钩子，兜底记录</p><p>4. <strong>错误分类</strong>：自定义 Error 子类（NetworkError / ValidationError / BusinessError），便于分层处理</p><p>5. <strong>超时与重试</strong>：用 <code>Promise.race</code> 实现超时，指数退避重试仅对幂等操作生效</p>",
+    tags: ["TypeScript", "错误处理"],
+    category: "编程实践"
+  },
+  {
+    id: 7,
+    question: "从零构建一个知识管理系统，技术栈怎么选？",
+    answer: "<p>知识管理系统的核心诉求是：<strong>结构化存储、全文检索、双向链接、可视化</strong>。</p><p><strong>推荐技术栈（0 预算可运行）：</strong></p><p>1. <strong>前端</strong>：React + Vite + TailwindCSS，轻量快速</p><p>2. <strong>存储</strong>：本地优先用 IndexedDB（Dexie.js），同步可选 Supabase 免费层</p><p>3. <strong>检索</strong>：FlexSearch（纯前端全文检索），无需后端</p><p>4. <strong>可视化</strong>：D3.js 或 Cytoscape.js 做知识图谱</p><p>5. <strong>编辑器</strong>：CodeMirror 6 或 TipTap，支持 Markdown + 双向链接语法</p><p><strong>关键决策：</strong>先做本地纯前端版本验证核心交互，再考虑云端同步。避免一开始就引入复杂后端。</p>",
+    tags: ["技术选型", "架构"],
+    category: "系统设计"
+  },
+  {
+    id: 8,
+    question: "学习新技术时，如何避免「教程地狱」？",
+    answer: "<p>教程地狱（Tutorial Hell）指不断看教程却永远做不出自己的东西。<strong>破局方法：</strong></p><p>1. <strong>20% 学 + 80% 做</strong>：每学一个概念立即用它解决一个真实问题，哪怕很小</p><p>2. <strong>以项目倒推学习</strong>：先定一个超出当前能力的项目，遇到什么学什么，而不是按部就班学完再做</p><p>3. <strong>关闭教程手写</strong>：看完一个功能后关掉视频，凭记忆重写，写不出来再回去看——主动回忆远比被动观看有效</p><p>4. <strong>教别人</strong>：把学到的东西写成笔记或讲给别人听，卡壳的地方就是没真正理解的地方</p><p>5. <strong>设定「完成标准」</strong>：每个学习阶段有明确的可交付产物，而不是「感觉学会了」</p>",
+    tags: ["学习方法", "效率"],
+    category: "学习方法"
+  },
+  {
+    id: 9,
+    question: "SQL 查询优化的核心思路是什么？",
+    answer: "<p>SQL 优化的本质是：<strong>减少扫描的数据量 + 减少计算的复杂度</strong>。</p><p><strong>排查顺序：</strong></p><p>1. <strong>看执行计划</strong>（EXPLAIN / EXPLAIN ANALYZE），确认是否走了索引、有没有全表扫描</p><p>2. <strong>索引优化</strong>：WHERE / JOIN / ORDER BY 的列建联合索引，注意最左前缀原则</p><p>3. <strong>避免 SELECT *</strong>：只取需要的列，减少 IO 和内存</p><p>4. <strong>LIMIT 分页优化</strong>：深分页用 <code>WHERE id > last_id</code> 替代 <code>OFFSET</code></p><p>5. <strong>JOIN 顺序</strong>：小表驱动大表，减少中间结果集</p><p>6. <strong>避免在索引列上用函数</strong>：<code>WHERE DATE(created_at) = ...</code> 会导致索引失效，改为范围查询</p>",
+    tags: ["数据库", "性能优化"],
+    category: "编程实践"
+  },
+  {
+    id: 10,
+    question: "个人项目如何做版本管理和发布？",
+    answer: "<p>个人项目的版本管理不需要重型流程，但需要<strong>可追溯、可回滚、可发布</strong>。</p><p><strong>最小可行流程：</strong></p><p>1. <strong>Git 提交规范</strong>：用 Conventional Commits（feat/fix/docs/refactor），写清改动内容</p><p>2. <strong>分支策略</strong>：main 保持可发布，功能在 feature 分支开发，完成后合并</p><p>3. <strong>语义化版本</strong>：v主版本.次版本.修订号，破坏性更新升主版本，新功能升次版本，bugfix 升修订号</p><p>4. <strong>GitHub Pages 部署</strong>：静态站点直接推 main 分支自动部署，零成本</p><p>5. <strong>CHANGELOG</strong>：每个版本记录「新增 / 修复 / 破坏变更」，用户能看懂</p><p>6. <strong>Tag + Release</strong>：重要版本打 git tag，在 GitHub 写 Release Notes</p>",
+    tags: ["Git", "工程化"],
+    category: "编程实践"
+  },
+  {
+    id: 11,
+    question: "Prompt 中的 System、User、Assistant 角色怎么用？",
+    answer: "<p>三种角色各有职责，混用会降低模型的遵循度。</p><p><strong>角色分工：</strong></p><p>1. <strong>System</strong>：设定全局人设、规则、输出格式。放在最前面，权重最高。保持简洁，避免与 User 内容冲突</p><p>2. <strong>User</strong>：当前轮次的实际请求。包含具体任务、输入数据、约束条件</p><p>3. <strong>Assistant</strong>：用于 few-shot 示例或多轮对话历史。展示期望的输出格式</p><p><strong>最佳实践：</strong></p><p>· System 写「你是谁 + 你要做什么 + 输出规则」，不写具体任务内容</p><p>· 示例用 User/Assistant 对展示，比在 System 里描述格式更有效</p><p>· 长上下文里 System 指令可能被稀释，关键约束可在 User 末尾重复</p>",
+    tags: ["提示词工程", "最佳实践"],
+    category: "AI 工程"
+  },
+  {
+    id: 12,
+    question: "如何判断一个技术值不值得学？",
+    answer: "<p>技术选型的决策框架：<strong>收益 × 概率 ÷ 成本</strong>。</p><p><strong>评估维度：</strong></p><p>1. <strong>半衰期</strong>：这个知识 3 年后还有用吗？基础原理（算法、网络、操作系统）半衰期长，框架 API 半衰期短</p><p>2. <strong>迁移性</strong>：学会后能迁移到其他领域吗？比如学了 Rust 的所有权概念，写 C++ 也受益</p><p>3. <strong>生态健康度</strong>：GitHub 活跃度、Stack Overflow 问题量、大厂采用情况——避免学一个正在消亡的技术</p><p>4. <strong>学习曲线</strong>：入门成本和精通成本分开评估。有些技术入门快但精通极难（如正则），有些反之</p><p>5. <strong>项目驱动</strong>：你有没有一个真实项目需要它？为学而学的留存率远低于为做而学</p><p><strong>结论：</strong>优先学「半衰期长 + 迁移性高 + 有项目驱动」的技术，框架类工具按需学习。</p>",
+    tags: ["学习方法", "技术选型"],
+    category: "学习方法"
+  }
+];
+
+// ===== 状态 =====
+let activeCategory = '全部';
+let searchQuery = '';
+
+// ===== DOM 引用 =====
+const grid = document.getElementById('grid');
+const categoriesEl = document.getElementById('categories');
+const searchInput = document.getElementById('searchInput');
+const totalCount = document.getElementById('totalCount');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const modalQuestion = document.getElementById('modalQuestion');
+const modalAnswer = document.getElementById('modalAnswer');
+const modalTags = document.getElementById('modalTags');
+const copyBtn = document.getElementById('copyBtn');
+const copyAllBtn = document.getElementById('copyAllBtn');
+const toast = document.getElementById('toast');
+let currentItem = null;
+
+// ===== 粒子背景 =====
+function initParticles() {
+  const container = document.getElementById('particles');
+  const count = window.innerWidth < 640 ? 20 : 40;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 4 + 1;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    p.style.opacity = Math.random() * 0.5 + 0.2;
+    container.appendChild(p);
+  }
+}
+
+// ===== 提取分类 =====
+function getCategories() {
+  const cats = ['全部'];
+  QA_DATA.forEach(item => {
+    if (!cats.includes(item.category)) cats.push(item.category);
+  });
+  return cats;
+}
+
+// ===== 渲染分类按钮 =====
+function renderCategories() {
+  const cats = getCategories();
+  categoriesEl.innerHTML = cats.map(cat =>
+    `<button class="cat-btn ${cat === activeCategory ? 'active' : ''}" data-cat="${cat}">${cat}</button>`
+  ).join('');
+  categoriesEl.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCategory = btn.dataset.cat;
+      renderCategories();
+      renderGrid();
+    });
+  });
+}
+
+// ===== 过滤数据 =====
+function getFilteredData() {
+  return QA_DATA.filter(item => {
+    const matchCat = activeCategory === '全部' || item.category === activeCategory;
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q ||
+      item.question.toLowerCase().includes(q) ||
+      item.answer.toLowerCase().includes(q) ||
+      item.tags.some(t => t.toLowerCase().includes(q));
+    return matchCat && matchSearch;
+  });
+}
+
+// ===== 渲染卡片网格 =====
+function renderGrid() {
+  const data = getFilteredData();
+  totalCount.textContent = data.length;
+
+  if (data.length === 0) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg>
+      </div>
+      <p>没有找到匹配的问答，换个关键词试试</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = data.map(item => `
+    <article class="card" data-id="${item.id}">
+      <div class="card-head">
+        <span class="q-badge">Q</span>
+        <h3 class="card-title">${item.question}</h3>
+      </div>
+      <p class="card-excerpt">${stripHtml(item.answer)}</p>
+      <div class="card-foot">
+        <div class="tag-list">
+          ${item.tags.slice(0, 3).map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+        <svg class="card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </div>
+    </article>
+  `).join('');
+
+  grid.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = parseInt(card.dataset.id);
+      const item = QA_DATA.find(q => q.id === id);
+      if (item) openModal(item);
+    });
+  });
+}
+
+// ===== 去除 HTML 标签取纯文本摘要 =====
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+// ===== 模态框 =====
+function openModal(item) {
+  currentItem = item;
+  modalQuestion.textContent = item.question;
+  modalAnswer.innerHTML = item.answer;
+  modalTags.innerHTML = item.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+  currentItem = null;
+}
+modalClose.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal();
+});
+
+// ===== 复制功能 =====
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+function copyText(text, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => fallbackCopy(text, msg));
+  } else {
+    fallbackCopy(text, msg);
+  }
+}
+function fallbackCopy(text, msg) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast(msg); } catch (e) { showToast('复制失败，请手动复制'); }
+  document.body.removeChild(ta);
+}
+copyBtn.addEventListener('click', () => {
+  if (currentItem) copyText(stripHtml(currentItem.answer), '答案已复制');
+});
+copyAllBtn.addEventListener('click', () => {
+  if (currentItem) {
+    const text = `Q: ${currentItem.question}\n\nA: ${stripHtml(currentItem.answer)}`;
+    copyText(text, '问答已复制');
+  }
+});
+
+// ===== 搜索 =====
+let searchTimer;
+searchInput.addEventListener('input', (e) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQuery = e.target.value.trim();
+    renderGrid();
+  }, 150);
+});
+
+// ===== 初始化 =====
+initParticles();
+renderCategories();
+renderGrid();
+</script>
 </body>
 </html>
